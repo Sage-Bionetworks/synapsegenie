@@ -11,7 +11,6 @@ import synapseutils
 from genie import input_to_database, process_functions
 from genie.validate import GenieValidationHelper
 
-
 syn = mock.create_autospec(synapseclient.Synapse)
 sample_clinical_synid = 'syn2222'
 
