@@ -10,9 +10,7 @@ try:
 except ModuleNotFoundError:
     from synapseclient.exceptions import SynapseHTTPError
 
-from . import config
-from . import example_filetype_format
-from . import process_functions
+from . import config, process_functions
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -26,7 +24,7 @@ class ValidationHelper(object):
     _validate_kwargs = []
 
     def __init__(self, syn, center, entitylist,
-                 format_registry=config.PROCESS_FILES,
+                 format_registry=None,
                  testing=False, file_type=None):
 
         """A validator helper class for a center's files.

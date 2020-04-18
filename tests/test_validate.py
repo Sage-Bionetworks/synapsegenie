@@ -7,7 +7,7 @@ import pytest
 import synapseclient
 from synapseclient.exceptions import SynapseHTTPError
 
-from genie import (validate, clinical, process_functions,
+from genie import (validate, process_functions,
                    example_filetype_format)
 
 CENTER = "SAGE"
