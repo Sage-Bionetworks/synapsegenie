@@ -9,11 +9,6 @@ import synapseclient
 import synapseutils
 
 from genie import input_to_database, process_functions
-
-# import genie.config
-# from genie.mafSP import mafSP
-# from genie.maf import maf
-# from genie.vcf import vcf
 from genie.validate import GenieValidationHelper
 
 
@@ -858,30 +853,3 @@ def test_mainnone_processfile():
         processing="main", test=False, reference=None,
         format_registry={"test": process_cls})
     process_cls.assert_not_called()
-
-
-def test_notvcf_processfile():
-    """Make sure vcf, maf, mafSP is called correctly"""
-    validfiles = {'id': ['syn1'],
-                  'path': ['/path/to/data_clinical_supp_SAGE.txt'],
-                  'fileType': [None]}
-    validfilesdf = pd.DataFrame(validfiles)
-    center = "SAGE"
-    path_to_genie = "./"
-    oncotree_link = "www.google.com"
-    center_mapping = {'stagingSynId': ["syn123"],
-                      'center': [center]}
-    center_mapping_df = pd.DataFrame(center_mapping)
-    databaseToSynIdMapping = {'Database': ['vcf'],
-                              'Id': ['syn222']}
-    databaseToSynIdMappingDf = pd.DataFrame(databaseToSynIdMapping)
-    process_cls = Mock()
-
-    input_to_database.processfiles(
-        syn, validfilesdf, center, path_to_genie,
-        center_mapping_df, oncotree_link, databaseToSynIdMappingDf,
-        validVCF=None, vcf2mafPath=None,
-        veppath=None, vepdata=None,
-        processing='vcf', test=False, reference=None,
-        format_registry={"vcf": process_cls})
-    process_cls.assert_called_once()

@@ -325,51 +325,31 @@ def processfiles(syn, validfiles, center, path_to_genie,
     if not os.path.exists(center_staging_folder):
         os.makedirs(center_staging_folder)
 
-    if processing != 'vcf':
-        for fileSynId, filePath, name, fileType in zip(validfiles['id'],
-                                                       validfiles['path'],
-                                                       validfiles['name'],
-                                                       validfiles['fileType']):
-            # filename = os.path.basename(filePath)
-            newPath = os.path.join(center_staging_folder, name)
-            # store = True
-            synId = databaseToSynIdMappingDf.Id[
-                databaseToSynIdMappingDf['Database'] == fileType]
-            if len(synId) == 0:
-                synId = None
-            else:
-                synId = synId[0]
-            if fileType is not None and (processing == "main" or processing == fileType):
-                processor = format_registry[fileType](syn, center)
-                processor.process(
-                    filePath=filePath, newPath=newPath,
-                    parentId=center_staging_synid, databaseSynId=synId,
-                    oncotree_link=oncotree_link,
-                    fileSynId=fileSynId, validVCF=validVCF,
-                    path_to_GENIE=path_to_genie, vcf2mafPath=vcf2mafPath,
-                    veppath=veppath, vepdata=vepdata,
-                    processing=processing,
-                    databaseToSynIdMappingDf=databaseToSynIdMappingDf,
-                    reference=reference, test=test)
-
-    else:
-        filePath = None
-        newPath = None
-        fileType = None
+    for fileSynId, filePath, name, fileType in zip(validfiles['id'],
+                                                    validfiles['path'],
+                                                    validfiles['name'],
+                                                    validfiles['fileType']):
+        # filename = os.path.basename(filePath)
+        newPath = os.path.join(center_staging_folder, name)
+        # store = True
         synId = databaseToSynIdMappingDf.Id[
-            databaseToSynIdMappingDf['Database'] == processing][0]
-        fileSynId = None
-        processor = format_registry[processing](syn, center)
-        processor.process(
-            filePath=filePath, newPath=newPath,
-            parentId=center_staging_synid, databaseSynId=synId,
-            oncotree_link=oncotree_link,
-            fileSynId=fileSynId, validVCF=validVCF,
-            path_to_GENIE=path_to_genie, vcf2mafPath=vcf2mafPath,
-            veppath=veppath, vepdata=vepdata,
-            processing=processing,
-            databaseToSynIdMappingDf=databaseToSynIdMappingDf,
-            reference=reference)
+            databaseToSynIdMappingDf['Database'] == fileType]
+        if len(synId) == 0:
+            synId = None
+        else:
+            synId = synId[0]
+        if fileType is not None and (processing == "main" or processing == fileType):
+            processor = format_registry[fileType](syn, center)
+            processor.process(
+                filePath=filePath, newPath=newPath,
+                parentId=center_staging_synid, databaseSynId=synId,
+                oncotree_link=oncotree_link,
+                fileSynId=fileSynId, validVCF=validVCF,
+                path_to_GENIE=path_to_genie, vcf2mafPath=vcf2mafPath,
+                veppath=veppath, vepdata=vepdata,
+                processing=processing,
+                databaseToSynIdMappingDf=databaseToSynIdMappingDf,
+                reference=reference, test=test)
 
     logger.info("ALL DATA STORED IN DATABASE")
 
