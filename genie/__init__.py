@@ -1,7 +1,6 @@
 # Import logging last to not take in synapseclient logging
 import logging
 
-from . import vcf
 from . import clinical
 from . import cna
 from . import maf
