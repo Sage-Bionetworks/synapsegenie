@@ -104,7 +104,7 @@ class ValidationHelper(object):
 
         return (valid, message)
 
-
+# TODO: Remove this at some point
 class GenieValidationHelper(ValidationHelper):
     """A validator helper class for AACR Project Genie.
     """
