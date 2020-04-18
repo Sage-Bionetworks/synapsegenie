@@ -16,7 +16,6 @@ import pandas as pd
 # from .config import PROCESS_FILES
 from . import process_functions
 from . import validate
-from . import toRetract
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -820,9 +819,6 @@ def center_input_to_database(syn, center, process, testing,
         processTrackerDf = processTracker.asDataFrame()
         processTrackerDf['timeEndProcessing'][0] = str(int(time.time()*1000))
         syn.store(synapseclient.Table(processTrackerSynId, processTrackerDf))
-
-        logger.info("SAMPLE/PATIENT RETRACTION")
-        toRetract.retract(syn, testing)
 
     else:
         messageOut = \
