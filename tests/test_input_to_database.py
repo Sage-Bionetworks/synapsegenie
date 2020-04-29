@@ -11,8 +11,6 @@ import synapseutils
 from genie import input_to_database, process_functions
 from genie.clinical import clinical
 import genie.config
-from genie.mafSP import mafSP
-from genie.maf import maf
 from genie.validate import GenieValidationHelper
 
 
@@ -794,9 +792,7 @@ def test_validation():
 
 @pytest.mark.parametrize(
     'process, genieclass, filetype', [
-        ('main', clinical, 'clinical'),
-        ('maf', maf, 'maf'),
-        ('mafSP', mafSP, 'mafSP')
+        ('main', clinical, 'clinical')
     ]
 )
 def test_main_processfile(process, genieclass, filetype):
