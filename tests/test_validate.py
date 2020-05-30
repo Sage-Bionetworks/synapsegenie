@@ -5,7 +5,10 @@ from mock import Mock, patch
 import pandas as pd
 import pytest
 import synapseclient
-from synapseclient.exceptions import SynapseHTTPError
+try:
+    from synapseclient.exceptions import SynapseHTTPError
+except ModuleNotFoundError:
+    from synapseclient.core.exceptions import SynapseHTTPError
 
 from genie import (validate, process_functions,
                    example_filetype_format)
@@ -232,11 +235,12 @@ class argparser:
     oncotree_link = "link"
     parentid = None
     filetype = None
-    testing = False
+    project_id = None
     center = "try"
     filepath = "path.csv"
     nosymbol_check = False
     format_registry_packages = ["genie"]
+    project_id = "syn1234"
 
     def asDataFrame(self):
         database_dict = {"Database": ["centerMapping", 'oncotreeLink'],
@@ -296,11 +300,12 @@ def test_perform_validate():
          patch.object(validate, "_upload_to_synapse") as patch_syn_upload:
         validate._perform_validate(syn, arg)
         patch_check_parentid.assert_called_once_with(syn, arg.parentid)
-        patch_getdb.assert_called_once_with(syn, test=arg.testing)
+        patch_getdb.assert_called_once_with(syn, project_id=arg.project_id)
         patch_syn_tablequery.assert_called_once_with('select * from syn123')
         patch_check_center.assert_called_once_with(arg.center, ["try", "foo"])
         patch_get_onco.assert_called_once()
         patch_validate.assert_called_once_with(oncotree_link=arg.oncotree_link,
-                                               nosymbol_check=arg.nosymbol_check)
+                                               nosymbol_check=arg.nosymbol_check,
+                                               project_id=arg.project_id)
         patch_syn_upload.assert_called_once_with(
             syn, arg.filepath, valid, parentid=arg.parentid)
