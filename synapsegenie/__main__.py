@@ -82,6 +82,8 @@ def process(syn, process, project_id, center=None, pemfile=None,
         center_mapping_df = center_mapping_df[center_mapping_df['release']]
         centers = center_mapping_df.center
 
+    validator_cls = config.collect_validation_helper(format_registry_packages)
+
     format_registry = config.collect_format_types(format_registry_packages)
 
     for process_center in centers:
@@ -90,7 +92,8 @@ def process(syn, process, project_id, center=None, pemfile=None,
             only_validate, databaseToSynIdMappingDf,
             center_mapping_df,
             delete_old=delete_old,
-            format_registry=format_registry
+            format_registry=format_registry,
+            validator_cls=validator_cls
         )
 
     error_tracker_synid = process_functions.getDatabaseSynId(
