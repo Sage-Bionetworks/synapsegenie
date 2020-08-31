@@ -121,9 +121,10 @@ def test_valid_validate_single_file():
                                     warning_string)) as mock_genie_class,\
          patch.object(validate, "collect_errors_and_warnings",
                       return_value=expected_message) as mock_determine:
-        validator = validate.ValidationHelper(syn, center=CENTER,
-                                              entitylist=entitylist,
-                                              format_registry={'clinical': FileFormat})
+        validator = validate.ValidationHelper(
+            syn, project_id="syn1234", center=CENTER,
+            entitylist=entitylist, format_registry={'clinical': FileFormat}
+        )
         valid, message = validator.validate_single_file(oncotree_link=None,
                                                         nosymbol_check=False)
 
@@ -152,7 +153,8 @@ def test_filetype_validate_single_file():
     with patch.object(FileFormat, "validateFilename",
                       side_effect=AssertionError):
         validator = validate.ValidationHelper(
-            syn, CENTER, entitylist, format_registry={'wrong': FileFormat}
+            syn=syn, project_id=None, center=CENTER, entitylist=entitylist,
+            format_registry={'wrong': FileFormat}
         )
 
         valid, message = validator.validate_single_file()
@@ -175,7 +177,7 @@ def test_wrongfiletype_validate_single_file():
                       "determine_filetype",
                       return_value=None) as mock_determine_filetype:
         validator = validate.ValidationHelper(
-            syn=syn, center=CENTER, entitylist=entitylist,
+            syn=syn, project_id=None, center=CENTER, entitylist=entitylist,
             format_registry={'wrong': Mock()}
         )
         valid, message = validator.validate_single_file()
@@ -299,6 +301,9 @@ def test_perform_validate():
                       return_value=arg) as patch_syn_tablequery,\
          patch.object(validate, "_check_center_input") as patch_check_center,\
          patch.object(validate, "_get_oncotreelink") as patch_get_onco,\
+         patch.object(
+            config, "collect_validation_helper",
+            return_value=validate.GenieValidationHelper) as patch_val_col,\
          patch.object(config, "collect_format_types") as patch_collect,\
          patch.object(validate.GenieValidationHelper,
                       "validate_single_file",
@@ -311,6 +316,7 @@ def test_perform_validate():
         patch_check_center.assert_called_once_with(arg.center, ["try", "foo"])
         patch_get_onco.assert_called_once()
         patch_collect.assert_called_once_with(["genie"])
+        patch_val_col.assert_called_once_with(["genie"])
         patch_validate.assert_called_once_with(oncotree_link=arg.oncotree_link,
                                                nosymbol_check=arg.nosymbol_check,
                                                project_id=arg.project_id)

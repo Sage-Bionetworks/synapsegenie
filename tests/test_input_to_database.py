@@ -822,7 +822,8 @@ class TestValidation:
                 syn, "syn123", center, process,
                 entities, databaseToSynIdMappingDf,
                 oncotree_link,
-                format_registry={"test": valiate_cls}
+                format_registry={"test": valiate_cls},
+                validator_cls=GenieValidationHelper
             )
             assert patch_query.call_count == 2
             patch_validatefile.assert_called_once_with(

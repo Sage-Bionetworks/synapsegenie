@@ -242,7 +242,9 @@ def _perform_validate(syn, args):
 
     args.oncotree_link = _get_oncotreelink(syn, databasetosynid_mappingdf,
                                            oncotree_link=args.oncotree_link)
-    validator_cls = config.collect_validation_helper(args.format_registry_packages)
+    validator_cls = config.collect_validation_helper(
+        args.format_registry_packages
+    )
 
     format_registry = config.collect_format_types(
         args.format_registry_packages
@@ -251,11 +253,12 @@ def _perform_validate(syn, args):
     entity_list = [synapseclient.File(name=filepath, path=filepath,
                                       parentId=None)
                    for filepath in args.filepath]
-    validator = GenieValidationHelper(syn=syn, project_id=args.project_id,
-                                      center=args.center,
-                                      entitylist=entity_list,
-                                      format_registry=format_registry,
-                                      file_type=args.filetype)
+
+    validator = validator_cls(syn=syn, project_id=args.project_id,
+                              center=args.center,
+                              entitylist=entity_list,
+                              format_registry=format_registry,
+                              file_type=args.filetype)
     mykwargs = dict(oncotree_link=args.oncotree_link,
                     nosymbol_check=args.nosymbol_check,
                     project_id=args.project_id)
