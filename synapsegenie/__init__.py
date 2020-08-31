@@ -1,9 +1,5 @@
 # Import logging last to not take in synapseclient logging
 import logging
-
-from . import clinical
-from . import cna
-
 from .__version__ import __version__
 
 logging.basicConfig(level=logging.INFO)
