@@ -11,7 +11,6 @@ logger.setLevel(logging.INFO)
 
 # BASE_CLASS = example_filetype_format.FileTypeFormat
 
-
 def make_format_registry_dict(cls_list):
     """Use an object's _fileType attribute to make a class lookup dictionary.
 
@@ -75,6 +74,7 @@ def collect_format_types(package_names):
     return file_format_dict
 
 
+
 def collect_validation_helper(package_names):
     """Finds subclasses of the example_filetype_format.FileTypeFormat from a
     list of package names.
@@ -89,7 +89,6 @@ def collect_validation_helper(package_names):
     """
     validation_cls = find_subclasses(package_names, validate.ValidationHelper)
     return validation_cls[0]
-
 
 # PROCESS_FILES_LIST = [x for x in get_subclasses(BASE_CLASS)]
 # PROCESS_FILES = make_format_registry_dict(cls_list=PROCESS_FILES_LIST)

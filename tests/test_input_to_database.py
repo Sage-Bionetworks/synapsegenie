@@ -1,15 +1,16 @@
 from datetime import datetime
-import mock
-from mock import Mock, patch
 import os
-import pytest
+from unittest import mock
+from unittest.mock import Mock, patch
 
 import pandas as pd
+import pytest
 import synapseclient
 import synapseutils
 
-from genie import input_to_database, process_functions
-from genie.validate import GenieValidationHelper
+from synapsegenie import input_to_database, process_functions
+import synapsegenie.config
+from synapsegenie.validate import GenieValidationHelper
 
 syn = mock.create_autospec(synapseclient.Synapse)
 sample_clinical_synid = 'syn2222'
@@ -143,11 +144,11 @@ def test_main_get_center_input_files():
         patch_syn_get.assert_has_calls(calls)
 
 
-def test_vcf_get_center_input_files():
-    '''
+def test_mutation_get_center_input_files():
+    """
     Test to make sure center input files are gotten
     including the vcf files since process vcf is specified
-    '''
+    """
     syn_get_effects = [sample_clinical_entity, patient_clinical_entity,
                        vcf1_entity, vcf2_entity]
     expected_center_file_list = [
@@ -163,10 +164,9 @@ def test_vcf_get_center_input_files():
                       return_value=walk_return()) as patch_synapseutils_walk,\
          patch.object(syn, "get",
                       side_effect=syn_get_effects) as patch_syn_get:
-        center_file_list = input_to_database.get_center_input_files(syn,
-                                                                    "syn12345",
-                                                                    center,
-                                                                    process="vcf")
+        center_file_list = input_to_database.get_center_input_files(
+            syn, "syn12345", center, process="mutation"
+        )
         assert len(center_file_list) == len(expected_center_file_list)
         assert len(center_file_list[2]) == 2
         assert center_file_list == expected_center_file_list
@@ -390,7 +390,7 @@ def test_valid_validatefile():
                       return_value={'status_list': [],
                                     'error_list': [],
                                     'to_validate': True}) as patch_check, \
-         patch.object(GenieValidationHelper,"validate_single_file",
+         patch.object(GenieValidationHelper, "validate_single_file",
                       return_value=(valid, message)) as patch_validate,\
          patch.object(input_to_database, "_get_status_and_error_list",
                       return_value=status_error_list_results) as patch_get_staterror_list,\
@@ -400,7 +400,6 @@ def test_valid_validatefile():
         validate_results = input_to_database.validatefile(
             syn, None, entities, validation_statusdf,
             error_trackerdf, center, threads, oncotree_link,
-            format_registry=genie.config.PROCESS_FILES,
             validator_cls=GenieValidationHelper)
 
         assert expected_results == validate_results
@@ -455,8 +454,8 @@ def test_invalid_validatefile():
         validate_results = input_to_database.validatefile(
             syn, None, entities, validation_statusdf,
             error_trackerdf, center, threads, oncotree_link,
-            format_registry=genie.config.PROCESS_FILES,
-            validator_cls=GenieValidationHelper)
+            validator_cls=GenieValidationHelper
+        )
 
         assert expected_results == validate_results
         patch_validate.assert_called_once_with(
@@ -513,7 +512,6 @@ def test_already_validated_validatefile():
         validate_results = input_to_database.validatefile(
             syn, None, entities, validation_statusdf,
             error_trackerdf, center, threads, oncotree_link,
-            format_registry=genie.config.PROCESS_FILES,
             validator_cls=GenieValidationHelper)
 
         assert expected_results == validate_results
@@ -585,7 +583,7 @@ def test__send_validation_error_email():
                       return_value={'userName':
                                     'trial'}) as patch_syn_getuserprofile,\
          patch.object(syn, "sendMessage") as patch_syn_sendmessage,\
-         patch('genie.input_to_database.datetime') as mock_datetime:
+         patch('synapsegenie.input_to_database.datetime') as mock_datetime:
         mock_datetime.datetime.today.return_value = datetime(2019, 11, 1, 00,
                                                              00, 00, 0)
         mock_datetime.side_effect = lambda *args, **kw: date(*args, **kw)
@@ -804,6 +802,7 @@ class TestValidation:
                       'duplicated_filesdf': self.empty_dup}
         validationstatus_mock = emptytable_mock()
         errortracking_mock = emptytable_mock()
+        valiate_cls = Mock()
         with patch.object(syn, "tableQuery",
                           side_effect=[validationstatus_mock,
                                        errortracking_mock]) as patch_query,\
@@ -818,10 +817,12 @@ class TestValidation:
              patch.object(input_to_database, "_update_tables_content",
                           return_value=new_tables),\
              patch.object(input_to_database, "update_status_and_error_tables"):
+
             valid_filedf = input_to_database.validation(
                 syn, "syn123", center, process,
                 entities, databaseToSynIdMappingDf,
-                oncotree_link, genie.config.PROCESS_FILES
+                oncotree_link,
+                format_registry={"test": valiate_cls}
             )
             assert patch_query.call_count == 2
             patch_validatefile.assert_called_once_with(
@@ -830,8 +831,8 @@ class TestValidation:
                 errortracking_mock,
                 center='SAGE', threads=1,
                 oncotree_link=oncotree_link,
-                format_registry=genie.config.PROCESS_FILES
-                validator_cls=GenieValidationHelper)
+                format_registry={"test": valiate_cls},
+                validator_cls=GenieValidationHelper
             )
 
             assert valid_filedf.equals(
@@ -841,8 +842,7 @@ class TestValidation:
 @pytest.mark.parametrize(
     'process, genieclass, filetype', [
         ('main', Mock(), 'clinical'),
-        ('maf', Mock(), 'maf'),
-        ('mafSP', Mock(), 'mafSP')
+        ('main', Mock(), 'maf'),
     ]
 )
 def test_main_processfile(process, genieclass, filetype):
@@ -861,17 +861,17 @@ def test_main_processfile(process, genieclass, filetype):
                               'Id': ['syn222']}
     databaseToSynIdMappingDf = pd.DataFrame(databaseToSynIdMapping)
     format_registry = {filetype: genieclass}
-    
+
     input_to_database.processfiles(
         syn, validfilesdf, center, path_to_genie,
         center_mapping_df, oncotree_link, databaseToSynIdMappingDf,
-        validVCF=None, vcf2mafPath=None,
-        veppath=None, vepdata=None,
-        processing=process, test=False, reference=None,
-        format_registry=format_registry)
+        processing=process,
+        format_registry=format_registry
+    )
     genieclass.assert_called_once()
 
 
+# TODO: Fix this
 def test_mainnone_processfile():
     """If file type is None, the processing function is not called"""
     validfiles = {'id': ['syn1'],
@@ -888,13 +888,12 @@ def test_mainnone_processfile():
     databaseToSynIdMapping = {'Database': ["clinical"],
                               'Id': ['syn222']}
     databaseToSynIdMappingDf = pd.DataFrame(databaseToSynIdMapping)
-
     process_cls = Mock()
+
+    # with patch.object(clinical, "process") as patch_clin:
     input_to_database.processfiles(
         syn, validfilesdf, center, path_to_genie,
         center_mapping_df, oncotree_link, databaseToSynIdMappingDf,
-        validVCF=None, vcf2mafPath=None,
-        veppath=None, vepdata=None,
-        processing="main", test=False, reference=None,
-        format_registry={"test": process_cls})
+        processing="main",
+        format_registry={"main": process_cls})
     process_cls.assert_not_called()

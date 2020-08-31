@@ -1,17 +1,14 @@
 """Tests validate.py"""
-import mock
-from mock import Mock, patch
+from unittest import mock
+from unittest.mock import Mock, patch
 
 import pandas as pd
 import pytest
 import synapseclient
-try:
-    from synapseclient.exceptions import SynapseHTTPError
-except ModuleNotFoundError:
-    from synapseclient.core.exceptions import SynapseHTTPError
+from synapseclient.core.exceptions import SynapseHTTPError
 
-from genie import (validate, process_functions,
-                   example_filetype_format)
+from synapsegenie import (config, example_filetype_format,
+                          process_functions, validate)
 
 CENTER = "SAGE"
 syn = mock.create_autospec(synapseclient.Synapse)
@@ -46,8 +43,10 @@ def test_perfect_determine_filetype():
     ent_list = [SAMPLE_ENT]
     with patch.object(FileFormat, "validateFilename",
                       return_value=filetype):
-        validator = validate.GenieValidationHelper(syn, CENTER, ent_list,
-                                                format_registry={filetype: FileFormat})
+        validator = validate.GenieValidationHelper(
+            syn, None, CENTER, ent_list,
+            format_registry={filetype: FileFormat}
+        )
         assert validator.determine_filetype() == filetype
 
 
@@ -59,9 +58,10 @@ def test_wrongfilename_noerror_determine_filetype():
     ent_list = [WRONG_NAME_ENT]
     with patch.object(FileFormat, "validateFilename",
                       side_effect=AssertionError):
-        validator = validate.ValidationHelper(syn, center=CENTER,
-                                              entitylist=ent_list,
-                                              format_registry={"wrong": FileFormat})
+        validator = validate.GenieValidationHelper(
+            syn, project_id=None,
+            center=CENTER, entitylist=ent_list,
+            format_registry={"wrong": FileFormat})
         assert validator.determine_filetype() is None
 
 
@@ -151,8 +151,9 @@ def test_filetype_validate_single_file():
 
     with patch.object(FileFormat, "validateFilename",
                       side_effect=AssertionError):
-        validator = validate.ValidationHelper(syn, CENTER, entitylist,
-                                              format_registry={'wrong': FileFormat})
+        validator = validate.ValidationHelper(
+            syn, CENTER, entitylist, format_registry={'wrong': FileFormat}
+        )
 
         valid, message = validator.validate_single_file()
         assert message == expected_error
@@ -165,14 +166,18 @@ def test_wrongfiletype_validate_single_file():
     in, an error is thrown
     """
     entitylist = [WRONG_NAME_ENT]
-    expected_error = '----------------ERRORS----------------\nYour filename is incorrect! Please change your filename before you run the validator or specify --filetype if you are running the validator locally'
+    expected_error = ('----------------ERRORS----------------\n'
+                      'Your filename is incorrect! Please change your '
+                      'filename before you run the validator or specify '
+                      '--filetype if you are running the validator locally')
 
     with patch.object(validate.ValidationHelper,
                       "determine_filetype",
                       return_value=None) as mock_determine_filetype:
-        validator = validate.ValidationHelper(syn=syn, center=CENTER,
-                                              entitylist=entitylist,
-                                              format_registry={'wrong': Mock()})
+        validator = validate.ValidationHelper(
+            syn=syn, center=CENTER, entitylist=entitylist,
+            format_registry={'wrong': Mock()}
+        )
         valid, message = validator.validate_single_file()
 
         assert message == expected_error
@@ -294,6 +299,7 @@ def test_perform_validate():
                       return_value=arg) as patch_syn_tablequery,\
          patch.object(validate, "_check_center_input") as patch_check_center,\
          patch.object(validate, "_get_oncotreelink") as patch_get_onco,\
+         patch.object(config, "collect_format_types") as patch_collect,\
          patch.object(validate.GenieValidationHelper,
                       "validate_single_file",
                       return_value=(valid, 'foo')) as patch_validate,\
@@ -304,6 +310,7 @@ def test_perform_validate():
         patch_syn_tablequery.assert_called_once_with('select * from syn123')
         patch_check_center.assert_called_once_with(arg.center, ["try", "foo"])
         patch_get_onco.assert_called_once()
+        patch_collect.assert_called_once_with(["genie"])
         patch_validate.assert_called_once_with(oncotree_link=arg.oncotree_link,
                                                nosymbol_check=arg.nosymbol_check,
                                                project_id=arg.project_id)

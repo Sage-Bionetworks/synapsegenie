@@ -5,12 +5,9 @@ import logging
 import sys
 
 import synapseclient
-try:
-    from synapseclient.core.exceptions import SynapseHTTPError
-except ModuleNotFoundError:
-    from synapseclient.exceptions import SynapseHTTPError
+from synapseclient.core.exceptions import SynapseHTTPError
 
-from . import config, process_functions
+from . import config, example_filetype_format, process_functions
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -88,6 +85,7 @@ class ValidationHelper(object):
                 assert required_parameter in kwargs.keys(), \
                     "%s not in parameter list" % required_parameter
                 mykwargs[required_parameter] = kwargs[required_parameter]
+                mykwargs['project_id'] = self._project.id
 
             validator_cls = self._format_registry[self.file_type]
             validator = validator_cls(self._synapse_client, self.center)
@@ -246,7 +244,9 @@ def _perform_validate(syn, args):
                                            oncotree_link=args.oncotree_link)
     validator_cls = config.collect_validation_helper(args.format_registry_packages)
 
-    format_registry = config.collect_format_types(args.format_registry_packages)
+    format_registry = config.collect_format_types(
+        args.format_registry_packages
+    )
     logger.debug("Using {} file formats.".format(format_registry))
     entity_list = [synapseclient.File(name=filepath, path=filepath,
                                       parentId=None)
