@@ -3,6 +3,7 @@ import importlib
 import logging
 
 from . import example_filetype_format
+from . import validate
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -72,5 +73,19 @@ def collect_format_types(package_names):
     file_format_dict = make_format_registry_dict(file_format_list)
     return file_format_dict
 
-# PROCESS_FILES_LIST = [x for x in get_subclasses(BASE_CLASS)]
-# PROCESS_FILES = make_format_registry_dict(cls_list=PROCESS_FILES_LIST)
+
+
+def collect_validation_helper(package_names):
+    """Finds subclasses of the example_filetype_format.FileTypeFormat from a
+    list of package names.
+
+    Args:
+        package_names: A list of Python package names as strings.
+
+    Returns:
+        A list of classes that are in the named packages and subclasses of
+        example_filetype_format.FileTypeFormat.
+
+    """
+    validation_cls = find_subclasses(package_names, validate.ValidationHelper)
+    return validation_cls[0]

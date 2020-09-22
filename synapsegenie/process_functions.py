@@ -184,35 +184,6 @@ def checkColExist(DF, key):
     return(result)
 
 
-# def get_oncotree_codes(oncotree_url):
-#     '''
-#     Deprecated
-#     Gets the oncotree data from the specified url.
-
-#     Args:
-#         oncotree_url: Oncotree url
-
-#     Returns:
-#         dataframe: oncotree codes
-#     '''
-#     # PATTERN = re.compile('([A-Za-z\' ,-/]*) \\(([A-Za-z_]*)\\)')
-#     PATTERN = re.compile('.*[(](.*)[)]')
-#     # with requests.get(oncotree_url) as oncotreeUrl:
-#     #   oncotree = oncotreeUrl.text.split("\n")
-#     oncotreeUrl = retry_get_url(oncotree_url)
-#     oncotree = oncotreeUrl.text.split("\n")
-
-#     # oncotree = urlopen(oncotree_url).read().split('\n')
-#     allCodes = []
-#     for row in oncotree[:-1]:
-#         data = row.split("\t")
-#         allCodes.extend([
-#             PATTERN.match(i).group(1)
-#             for i in data[0:5] if PATTERN.match(i)])
-#     codes = pd.DataFrame({"ONCOTREE_CODE": list(set(allCodes))})
-#     return(codes)
-
-
 def lookup_dataframe_value(df, col, query):
     '''
     Look up dataframe value given query and column
@@ -864,77 +835,6 @@ def check_col_and_values(df, col, possible_values, filename, na_allowed=False,
     return(warning, error)
 
 
-def extract_oncotree_code_mappings_from_oncotree_json(
-        oncotree_json, primary, secondary):
-    oncotree_code_to_info = {}
-    data = oncotree_json['children']
-    for node in data:
-        # if not node['code']:
-        #     sys.stderr.write('Encountered oncotree node without '
-        #                       'oncotree code : ' + node + '\n')
-        #     continue
-        if data[node]['level'] == 1:
-            primary = node
-            secondary = ''
-        elif data[node]['level'] == 2:
-            secondary = node
-        cancer_type = data[node]['mainType']
-        cancer_type_detailed = data[node]['name']
-        if not cancer_type_detailed:
-            cancer_type_detailed = ''
-        oncotree_code_to_info[node.upper()] = {
-            'CANCER_TYPE': cancer_type,
-            'CANCER_TYPE_DETAILED': cancer_type_detailed,
-            'ONCOTREE_PRIMARY_NODE': primary,
-            'ONCOTREE_SECONDARY_NODE': secondary}
-
-        if len(data[node]['children']) > 0:
-            recurseDict = extract_oncotree_code_mappings_from_oncotree_json(
-                data[node], primary, secondary)
-            oncotree_code_to_info.update(recurseDict)
-    return oncotree_code_to_info
-
-
-def get_oncotree_code_mappings(oncotree_tumortype_api_endpoint_url):
-    '''
-    CREATE ONCOTREE DICTIONARY MAPPING TO PRIMARY, SECONDARY,
-    CANCER TYPE, AND CANCER DESCRIPTION
-    '''
-    # oncotree_raw_response = urlopen(oncotree_tumortype_api_endpoint_url).text
-    # with requests.get(oncotree_tumortype_api_endpoint_url) as oncotreeUrl:
-    oncotreeUrl = retry_get_url(oncotree_tumortype_api_endpoint_url)
-    oncotree_raw_response = oncotreeUrl.text
-    oncotree_response = json.loads(oncotree_raw_response)
-    oncotree_response = oncotree_response['TISSUE']
-    return extract_oncotree_code_mappings_from_oncotree_json(
-        oncotree_response, '', '')
-
-
-# Get mapping code #Add USE DESCRIPTION sampletypedetailed -> public
-def getCODE(mapping, key, useDescription=False):
-    if useDescription:
-        value = mapping['DESCRIPTION'][mapping['CODE'] == key].values
-    else:
-        value = mapping['CBIO_LABEL'][mapping['CODE'] == key].values
-    if len(value) > 0:
-        return(value[0])
-    else:
-        return("")
-
-
-def getPrimary(code, oncotreeDict, primary):
-    if code != "":
-        for level in oncotreeDict:
-            if sum(oncotreeDict[level] == code) > 0:
-                toAdd = primary[oncotreeDict[level] == code].values[0]
-                break
-            else:
-                toAdd = code
-    else:
-        toAdd = "NOT_ANNOTATED"
-    return(toAdd)
-
-
 # def createKey():
 #   import Crypto
 #   from Crypto.PublicKey import RSA
@@ -1021,22 +921,3 @@ def synLogin(pemfile_path, debug=False):
         syn = synapseclient.Synapse(debug=debug)
         syn.login(os.environ['GENIE_USER'], genie_pass)
     return(syn)
-
-
-def get_gdc_data_dictionary(filetype):
-    '''
-    Use the GDC API to get the values allowed for columns of
-    different filetypes (ie. disease_type in the case file)
-
-    Args:
-        filetype: GDC file type (ie. case, read_group)
-
-    Return:
-        json:  Dictionary of allowed columns for the filetype and
-               allowed values for those columns
-    '''
-    gdc_dict = retry_get_url(
-        "https://api.gdc.cancer.gov/v0/submission/_dictionary/{filetype}"
-        .format(filetype=filetype))
-    gdc_response = json.loads(gdc_dict.text)
-    return(gdc_response)

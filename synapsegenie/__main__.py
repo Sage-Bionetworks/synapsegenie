@@ -82,6 +82,8 @@ def process(syn, process, project_id, center=None, pemfile=None,
         center_mapping_df = center_mapping_df[center_mapping_df['release']]
         centers = center_mapping_df.center
 
+    validator_cls = config.collect_validation_helper(format_registry_packages)
+
     format_registry = config.collect_format_types(format_registry_packages)
 
     for process_center in centers:
@@ -90,7 +92,8 @@ def process(syn, process, project_id, center=None, pemfile=None,
             only_validate, databaseToSynIdMappingDf,
             center_mapping_df,
             delete_old=delete_old,
-            format_registry=format_registry
+            format_registry=format_registry,
+            validator_cls=validator_cls
         )
 
     error_tracker_synid = process_functions.getDatabaseSynId(
@@ -129,10 +132,8 @@ def build_parser():
     parser_validate.add_argument("center", type=str, help='Contributing Centers')
 
     parser_validate.add_argument("--format_registry_packages", type=str, nargs="+",
-                                 default=["genie"],
+                                 default=["example_registry"],
                                  help="Python package name(s) to get valid file formats from (default: %(default)s).")
-
-    parser_validate.add_argument("--oncotree_link", type=str, help="Link to oncotree code")
 
     validate_group = parser_validate.add_mutually_exclusive_group()
 
@@ -150,13 +151,9 @@ def build_parser():
                                      'If specified, your valid files will be uploaded '
                                      'to this directory.')
 
-    # TODO: remove this default when private genie project is ready
     parser_validate.add_argument("--project_id", type=str,
                                  default="syn3380222",
                                  help='Synapse Project ID where data is stored.')
-
-    parser_validate.add_argument("--nosymbol-check", action='store_true',
-                                 help='Do not check hugo symbols of fusion and cna file')
 
     parser_validate.set_defaults(func=validate._perform_validate)
 
