@@ -921,22 +921,3 @@ def synLogin(pemfile_path, debug=False):
         syn = synapseclient.Synapse(debug=debug)
         syn.login(os.environ['GENIE_USER'], genie_pass)
     return(syn)
-
-
-def get_gdc_data_dictionary(filetype):
-    '''
-    Use the GDC API to get the values allowed for columns of
-    different filetypes (ie. disease_type in the case file)
-
-    Args:
-        filetype: GDC file type (ie. case, read_group)
-
-    Return:
-        json:  Dictionary of allowed columns for the filetype and
-               allowed values for those columns
-    '''
-    gdc_dict = retry_get_url(
-        "https://api.gdc.cancer.gov/v0/submission/_dictionary/{filetype}"
-        .format(filetype=filetype))
-    gdc_response = json.loads(gdc_dict.text)
-    return(gdc_response)

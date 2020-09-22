@@ -291,7 +291,6 @@ def validatefile(syn, project_id, entities, validation_status_table, error_track
 def processfiles(syn, validfiles, center, path_to_genie,
                  center_mapping_df, databaseToSynIdMappingDf,
                  processing="main",
-                 genome_nexus_pkg="/root/annotation-tools",
                  format_registry=None):
     """Processing validated files
 
@@ -338,14 +337,6 @@ def processfiles(syn, validfiles, center, path_to_genie,
                 )
     else:
         pass
-        # process_mutation.process_mutation_workflow(
-        #     syn=syn,
-        #     center=center,
-        #     validfiles=validfiles,
-        #     genie_annotation_pkg=genome_nexus_pkg,
-        #     database_mappingdf=databaseToSynIdMappingDf,
-        #     workdir=path_to_genie
-        # )
 
     logger.info("ALL DATA STORED IN DATABASE")
 
@@ -841,7 +832,6 @@ def center_input_to_database(syn, project_id, center, process,
                      center_mapping_df,
                      database_to_synid_mappingdf,
                      processing=process,
-                     genome_nexus_pkg=genie_annotation_pkg,
                      format_registry=format_registry)
 
         # Should add in this process end tracking
