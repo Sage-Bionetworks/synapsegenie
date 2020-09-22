@@ -48,61 +48,37 @@ To avoid the syn.get rest call later which doesn't actually download the file
 
 
 def entity_date_to_timestamp(entity_date_time):
-    """Convert Synapse object date/time string (from modifiedOn or createdOn properties) to a timestamp.
+    """Convert Synapse object date/time string (from modifiedOn or
+    createdOn properties) to a timestamp.
     """
-
     date_and_time = entity_date_time.split(".")[0]
-    date_time_obj = datetime.datetime.strptime(date_and_time, "%Y-%m-%dT%H:%M:%S")
+    date_time_obj = datetime.datetime.strptime(date_and_time,
+                                               "%Y-%m-%dT%H:%M:%S")
     return to_unix_epoch_time(date_time_obj)
 
 
-def get_center_input_files(syn, synid, center, process="main", downloadFile=True):
-    '''
-    This function walks through each center's input directory
+def get_center_input_files(syn, synid, center, downloadFile=True):
+    """This function walks through each center's input directory
     to get a list of tuples of center files
 
     Args:
         syn: Synapse object
         synid: Center input folder synid
         center: Center name
-        process: Process type includes, main, vcf, maf and mafSP.
-                 Defaults to main such that the vcf
 
     Returns:
         List of entities with the correct format to pass into validation
-    '''
-    logger.info("GETTING {center} INPUT FILES".format(center=center))
-    clinical_pair_name = [
-        "data_clinical_supp_sample_{center}.txt".format(center=center),
-        "data_clinical_supp_patient_{center}.txt".format(center=center)]
 
+    """
+    logger.info(f"GETTING {center} INPUT FILES")
     center_files = synapseutils.walk(syn, synid)
-    clinicalpair_entities = []
     prepared_center_file_list = []
 
     for _, _, entities in center_files:
         for name, ent_synid in entities:
-            # This is to remove vcfs from being validated during main
-            # processing. Often there are too many vcf files, and it is
-            # not necessary for them to be run everytime.
-            if name.endswith(".vcf") and process != "mutation":
-                continue
-
             ent = syn.get(ent_synid, downloadFile=downloadFile)
 
-            # Clinical file can come as two files.
-            # The two files need to be merged together which is
-            # why there is this format
-
-            if name in clinical_pair_name:
-                clinicalpair_entities.append(ent)
-                continue
-
             prepared_center_file_list.append([ent])
-
-    if clinicalpair_entities:
-        # clinicalpair_entities = [x for x in clinicalpair]
-        prepared_center_file_list.append(clinicalpair_entities)
 
     return prepared_center_file_list
 
@@ -290,7 +266,6 @@ def validatefile(syn, project_id, entities, validation_status_table, error_track
 # TODO: Create ProcessHelper class
 def processfiles(syn, validfiles, center, path_to_genie,
                  center_mapping_df, databaseToSynIdMappingDf,
-                 processing="main",
                  format_registry=None):
     """Processing validated files
 
@@ -302,7 +277,7 @@ def processfiles(syn, validfiles, center, path_to_genie,
         path_to_genie: Path to GENIE workdir
         center_mapping_df: Center mapping dataframe
         databaseToSynIdMappingDf: Database to synapse id mapping dataframe
-        processing: Processing type. Defaults to main
+
     """
     logger.info("PROCESSING {} FILES: {}".format(center, len(validfiles)))
     center_staging_folder = os.path.join(path_to_genie, center)
@@ -312,31 +287,28 @@ def processfiles(syn, validfiles, center, path_to_genie,
     if not os.path.exists(center_staging_folder):
         os.makedirs(center_staging_folder)
 
-    if processing == 'main':
-        for _, row in validfiles.iterrows():
-            filetype = row['fileType']
-            # filename = os.path.basename(filePath)
-            newpath = os.path.join(center_staging_folder, row['name'])
-            # store = True
-            tableid = databaseToSynIdMappingDf.Id[
-                databaseToSynIdMappingDf['Database'] == filetype]
-            # tableid is a series, so much check actual length
-            # Can't do `if tableid:`
-            if len(tableid) == 0:
-                tableid = None
-            else:
-                tableid = tableid[0]
+    for _, row in validfiles.iterrows():
+        filetype = row['fileType']
+        # filename = os.path.basename(filePath)
+        newpath = os.path.join(center_staging_folder, row['name'])
+        # store = True
+        tableid = databaseToSynIdMappingDf.Id[
+            databaseToSynIdMappingDf['Database'] == filetype]
+        # tableid is a series, so much check actual length
+        # Can't do `if tableid:`
+        if len(tableid) == 0:
+            tableid = None
+        else:
+            tableid = tableid[0]
 
-            if filetype is not None:
-                processor = format_registry[filetype](syn, center)
-                processor.process(
-                    filePath=row['path'], newPath=newpath,
-                    parentId=center_staging_synid, databaseSynId=tableid,
-                    fileSynId=row['id'],
-                    databaseToSynIdMappingDf=databaseToSynIdMappingDf
-                )
-    else:
-        pass
+        if filetype is not None:
+            processor = format_registry[filetype](syn, center)
+            processor.process(
+                filePath=row['path'], newPath=newpath,
+                parentId=center_staging_synid, databaseSynId=tableid,
+                fileSynId=row['id'],
+                databaseToSynIdMappingDf=databaseToSynIdMappingDf
+            )
 
     logger.info("ALL DATA STORED IN DATABASE")
 
@@ -631,8 +603,8 @@ def _update_tables_content(validation_statusdf, error_trackingdf):
             'duplicated_filesdf': duplicated_filesdf}
 
 
-def validation(syn, project_id, center, process,
-               center_files, database_synid_mappingdf,
+def validation(syn, project_id, center, center_files,
+               database_synid_mappingdf,
                format_registry, validator_cls):
     '''
     Validation of all center files
@@ -658,7 +630,7 @@ def validation(syn, project_id, center, process,
     # Make sure the vcf validation statuses don't get wiped away
     # If process is not vcf, the vcf files are not downloaded
     # TODO: Add parameter to exclude types
-    exclude_type = 'vcf' if process != 'mutation' else ''
+    exclude_type = ''
     # id, md5, status, name, center, modifiedOn, fileType
     validation_status_table = syn.tableQuery(
         f"SELECT * FROM {validation_status_synid} where "
@@ -732,10 +704,9 @@ def validation(syn, project_id, center, process,
     return(valid_filesdf[['id', 'path', 'fileType', 'name']])
 
 
-def center_input_to_database(syn, project_id, center, process,
+def center_input_to_database(syn, project_id, center,
                              only_validate, database_to_synid_mappingdf,
                              center_mapping_df, delete_old=False,
-                             genie_annotation_pkg=None,
                              format_registry=None, validator_cls=None):
     if only_validate:
         log_path = os.path.join(
@@ -775,34 +746,18 @@ def center_input_to_database(syn, project_id, center, process,
     center_input_synid = center_mapping_df['inputSynId'][
         center_mapping_df['center'] == center][0]
     logger.info("Center: " + center)
-    center_files = get_center_input_files(syn, center_input_synid, center,
-                                          process)
+    center_files = get_center_input_files(syn, center_input_synid, center)
 
     # only validate if there are center files
     if center_files:
-        validFiles = validation(syn, project_id, center, process, center_files,
+        validFiles = validation(syn, project_id, center, center_files,
                                 database_to_synid_mappingdf,
                                 format_registry, validator_cls)
     else:
-        logger.info("{} has not uploaded any files".format(center))
+        logger.info(f"{center} has not uploaded any files")
         return
 
     if len(validFiles) > 0 and not only_validate:
-        # Reorganize so BED file are always validated and processed first
-        # bed_files = validFiles['fileType'] == "bed"
-        # beds = validFiles[bed_files]
-        # validFiles = beds.append(validFiles)
-        # validFiles.drop_duplicates(inplace=True)
-        # # merge clinical files into one row
-        # clinical_ind = validFiles['fileType'] == "clinical"
-        # if clinical_ind.any():
-        #     clinical_files = validFiles[clinical_ind].to_dict(orient='list')
-        #     # The [] implies the values in the dict as a list
-        #     merged_clinical = pd.DataFrame([clinical_files])
-        #     merged_clinical['fileType'] = 'clinical'
-        #     merged_clinical['name'] = f"data_clinical_supp_{center}.txt"
-        #     validFiles = validFiles[~clinical_ind].append(merged_clinical)
-
         # processTrackerSynId = process_functions.getDatabaseSynId(
         #     syn, "processTracker",
         #     databaseToSynIdMappingDf=database_to_synid_mappingdf)
@@ -831,7 +786,6 @@ def center_input_to_database(syn, project_id, center, process,
         processfiles(syn, validFiles, center, path_to_genie,
                      center_mapping_df,
                      database_to_synid_mappingdf,
-                     processing=process,
                      format_registry=format_registry)
 
         # Should add in this process end tracking
