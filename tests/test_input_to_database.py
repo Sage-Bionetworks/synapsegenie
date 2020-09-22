@@ -454,7 +454,6 @@ def test_already_validated_validatefile():
     entity.modifiedBy = '333'
     entity.createdBy = '444'
     entities = [entity]
-    threads = 0
     valid = False
     errors = "Invalid file"
     filetype = "markdown"
@@ -484,7 +483,7 @@ def test_already_validated_validatefile():
 
         validate_results = input_to_database.validatefile(
             syn, None, entities, validation_statusdf,
-            error_trackerdf, center, threads, oncotree_link,
+            error_trackerdf, center, oncotree_link,
             validator_cls=ValidationHelper)
 
         assert expected_results == validate_results
@@ -801,7 +800,7 @@ class TestValidation:
                 syn, "syn123", entity,
                 validationstatus_mock,
                 errortracking_mock,
-                center='SAGE', threads=1,
+                center='SAGE',
                 format_registry={"test": valiate_cls},
                 validator_cls=ValidationHelper
             )

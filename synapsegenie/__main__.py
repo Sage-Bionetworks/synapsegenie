@@ -39,6 +39,46 @@ def bootstrap_infra(syn, args):
     bootstrap.main(syn)
 
 
+def validate_single_file_cli_wrapper(syn, args):
+    """This is the main entry point to the genie command line tool."""
+    # Check parentid argparse
+    validate._check_parentid_permission_container(syn, args.parentid)
+
+    databasetosynid_mappingdf = process_functions.get_synid_database_mappingdf(
+        syn, project_id=args.project_id)
+
+    synid = databasetosynid_mappingdf.query('Database == "centerMapping"').Id
+
+    center_mapping = syn.tableQuery('select * from {}'.format(synid.iloc[0]))
+    center_mapping_df = center_mapping.asDataFrame()
+
+    # Check center argparse
+    validate._check_center_input(args.center, center_mapping_df.center.tolist())
+
+    validator_cls = config.collect_validation_helper(
+        args.format_registry_packages
+    )
+
+    format_registry = config.collect_format_types(
+        args.format_registry_packages
+    )
+    logger.debug("Using {} file formats.".format(format_registry))
+    entity_list = [synapseclient.File(name=filepath, path=filepath,
+                                      parentId=None)
+                   for filepath in args.filepath]
+
+    validator = validator_cls(syn=syn, project_id=args.project_id,
+                              center=args.center,
+                              entitylist=entity_list,
+                              format_registry=format_registry,
+                              file_type=args.filetype)
+    mykwargs = dict(project_id=args.project_id)
+    valid, message = validator.validate_single_file(**mykwargs)
+
+    # Upload to synapse if parentid is specified and valid
+    validate._upload_to_synapse(syn, args.filepath, valid, parentid=args.parentid)
+
+
 def process_cli_wrapper(syn, args):
     """Process CLI wrapper"""
     process(syn, args.project_id, center=args.center,
@@ -170,7 +210,7 @@ def build_parser():
              'to this directory.'
     )
 
-    parser_validate.set_defaults(func=validate._perform_validate)
+    parser_validate.set_defaults(func=validate_single_file_cli_wrapper)
 
     parser_bootstrap = subparsers.add_parser('bootstrap-infra',
                                              help='Create GENIE-like infra',

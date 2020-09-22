@@ -6,6 +6,7 @@ from typing import ClassVar, Dict, List, Type
 from .example_filetype_format import FileTypeFormat
 from .validate import ValidationHelper
 
+
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -24,15 +25,14 @@ def make_format_registry_dict(cls_list: list) -> dict:
     return {cls._fileType: cls for cls in cls_list}
 
 
-def get_subclasses(cls):
+def get_subclasses(cls: 'class'):
     """Gets subclasses of modules and classes"""
     for subclass in cls.__subclasses__():
         yield from get_subclasses(subclass)
         yield subclass
 
 
-def find_subclasses(package_names: list,
-                    base_class: ClassVar) -> list:
+def find_subclasses(package_names: list, base_class: 'class') -> list:
     """Finds subclasses of a specified base class
     from a list of package names.
 
@@ -57,7 +57,7 @@ def find_subclasses(package_names: list,
     return matching_classes
 
 
-def collect_format_types(package_names: str) -> Dict[str: FileTypeFormat]:
+def collect_format_types(package_names: str) -> Dict[str, FileTypeFormat]:
     """Finds subclasses of the example_filetype_format.FileTypeFormat from a
     list of package names.
 

@@ -238,25 +238,6 @@ def test_invalid__check_center_input():
 ONCOTREE_ENT = 'syn222'
 
 
-class argparser:
-    oncotree_link = "link"
-    parentid = None
-    filetype = None
-    project_id = None
-    center = "try"
-    filepath = "path.csv"
-    nosymbol_check = False
-    format_registry_packages = ["example_registry"]
-    project_id = "syn1234"
-
-    def asDataFrame(self):
-        database_dict = {"Database": ["centerMapping", 'oncotreeLink'],
-                         "Id": ["syn123", ONCOTREE_ENT],
-                         "center": ["try", 'foo']}
-        databasetosynid_mappingdf = pd.DataFrame(database_dict)
-        return databasetosynid_mappingdf
-
-
 def test_valid__upload_to_synapse():
     """
     Test upload of file to synapse under right conditions
@@ -266,35 +247,3 @@ def test_valid__upload_to_synapse():
         validate._upload_to_synapse(syn, ['foo'], True, parentid="syn123")
         patch_synstore.assert_called_once_with(
             synapseclient.File('foo', parent="syn123"))
-
-
-def test_perform_validate():
-    """Make sure all functions are called"""
-    arg = argparser()
-    valid = True
-    with patch.object(validate,
-                      "_check_parentid_permission_container",
-                      return_value=None) as patch_check_parentid,\
-         patch.object(process_functions, "get_synid_database_mappingdf",
-                      return_value=arg.asDataFrame()) as patch_getdb,\
-         patch.object(syn, "tableQuery",
-                      return_value=arg) as patch_syn_tablequery,\
-         patch.object(validate, "_check_center_input") as patch_check_center,\
-         patch.object(
-            config, "collect_validation_helper",
-            return_value=validate.ValidationHelper) as patch_val_col,\
-         patch.object(config, "collect_format_types") as patch_collect,\
-         patch.object(validate.ValidationHelper,
-                      "validate_single_file",
-                      return_value=(valid, 'foo')) as patch_validate,\
-         patch.object(validate, "_upload_to_synapse") as patch_syn_upload:
-        validate._perform_validate(syn, arg)
-        patch_check_parentid.assert_called_once_with(syn, arg.parentid)
-        patch_getdb.assert_called_once_with(syn, project_id=arg.project_id)
-        patch_syn_tablequery.assert_called_once_with('select * from syn123')
-        patch_check_center.assert_called_once_with(arg.center, ["try", "foo"])
-        patch_collect.assert_called_once_with(["example_registry"])
-        patch_val_col.assert_called_once_with(["example_registry"])
-        patch_validate.assert_called_once_with(project_id=arg.project_id)
-        patch_syn_upload.assert_called_once_with(
-            syn, arg.filepath, valid, parentid=arg.parentid)
