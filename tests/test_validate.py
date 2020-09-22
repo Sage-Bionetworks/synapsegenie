@@ -235,9 +235,6 @@ def test_invalid__check_center_input():
         validate._check_center_input(center, center_list)
 
 
-ONCOTREE_ENT = 'syn222'
-
-
 def test_valid__upload_to_synapse():
     """
     Test upload of file to synapse under right conditions

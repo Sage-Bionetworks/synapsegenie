@@ -1,7 +1,7 @@
 """Configuration to obtain registry classes"""
 import importlib
 import logging
-from typing import Dict, List, Type
+from typing import Dict, Type
 
 from .example_filetype_format import FileTypeFormat
 from .validate import ValidationHelper
@@ -49,7 +49,7 @@ def find_subclasses(package_names: list, base_class: 'class') -> list:
         importlib.import_module(package_name)
 
     for cls in get_subclasses(base_class):
-        logger.debug("checking {cls}.".format(cls=cls))
+        logger.debug(f"checking {cls}.")
         cls_module_name = cls.__module__
         cls_pkg = cls_module_name.split('.')[0]
         if cls_pkg in package_names:

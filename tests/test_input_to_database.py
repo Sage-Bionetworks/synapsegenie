@@ -1,3 +1,4 @@
+"""Testing input to database"""
 from datetime import datetime
 import os
 from unittest import mock
@@ -9,7 +10,6 @@ import synapseclient
 import synapseutils
 
 from synapsegenie import input_to_database, process_functions
-import synapsegenie.config
 from synapsegenie.validate import ValidationHelper
 
 syn = mock.create_autospec(synapseclient.Synapse)
@@ -500,7 +500,7 @@ def test_valid__get_status_and_error_list():
     Tests the correct status and error lists received
     when file is valid.
     '''
-    modified_on = 1561143558000
+    # modified_on = 1561143558000
     modified_on_string = "2019-06-21T18:59:18.456Z"
 
     entity = synapseclient.Entity(id='syn1234', md5='44444',
@@ -512,7 +512,7 @@ def test_valid__get_status_and_error_list():
 
     valid = True
     message = 'valid'
-    filetype = 'clinical'
+    # filetype = 'clinical'
 
     input_status_list, invalid_errors_list = \
         input_to_database._get_status_and_error_list(
@@ -526,7 +526,7 @@ def test_invalid__get_status_and_error_list():
     Tests the correct status and error lists received
     when file is invalid.
     '''
-    modified_on = 1561143558000
+    # modified_on = 1561143558000
     modified_on_string = "2019-06-21T18:59:18.456Z"
     entity = synapseclient.Entity(id='syn1234', md5='44444',
                                   path='/path/to/foobar.txt',
@@ -534,7 +534,7 @@ def test_invalid__get_status_and_error_list():
     entity.properties.modifiedOn = modified_on_string
 
     entities = [entity]
-    filetype = "clinical"
+    # filetype = "clinical"
     # This valid variable control the validation status
     valid = False
     errors = 'invalid file content'
@@ -821,7 +821,6 @@ def test_main_processfile(genieclass, filetype):
                   'fileType': [filetype],
                   'name': ['data_clinical_supp_SAGE.txt']}
     validfilesdf = pd.DataFrame(validfiles)
-    center = "SAGE"
     path_to_genie = "./"
     center_mapping = {'stagingSynId': ["syn123"],
                       'center': [center]}
