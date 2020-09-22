@@ -709,13 +709,11 @@ def center_input_to_database(syn, project_id, center,
                              center_mapping_df, delete_old=False,
                              format_registry=None, validator_cls=None):
     if only_validate:
-        log_path = os.path.join(
-            process_functions.SCRIPT_DIR,
-            "{}_validation_log.txt".format(center))
+        log_path = os.path.join(process_functions.SCRIPT_DIR,
+                                f"{center}_validation_log.txt")
     else:
-        log_path = os.path.join(
-            process_functions.SCRIPT_DIR,
-            "{}_{}_log.txt".format(center, process))
+        log_path = os.path.join(process_functions.SCRIPT_DIR,
+                                f"{center}_log.txt")
 
     logFormatter = logging.Formatter(
         "%(asctime)s [%(name)s][%(levelname)s] %(message)s")
