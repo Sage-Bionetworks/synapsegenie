@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # noqa pylint: disable=line-too-long
-"""genie cli"""
+"""synapsegenie cli"""
 import argparse
 import logging
 
@@ -29,8 +29,7 @@ def synapse_login(username=None, password=None):
             raise ValueError("Please specify --syn_user, --syn_pass to specify your Synapse "
                              "login. Please view https://docs.synapse.org/articles/client_configuration.html"
                              "to learn about logging into Synapse via the Python client.")
-        syn = synapseclient.login(email=username,
-                                  password=password,
+        syn = synapseclient.login(email=username, password=password,
                                   silent=True)
     return syn
 
@@ -142,18 +141,16 @@ def build_parser():
     )
 
     parser_validate = subparsers.add_parser(
-        'validate', help='Validates GENIE file formats',
+        'validate-single-file',
+        help='Validates a file whose file format is specified by the format '
+             'registry',
         parents=[parent_parser]
     )
 
-    parser_validate.add_argument(
-        "filepath", type=str, nargs="+",
-        help='File(s) that you are validating.'
-             'If you validation your clinical files and you have both sample '
-             'and patient files, you must provide both')
+    parser_validate.add_argument("filepath", type=str, nargs="+",
+                                 help='File that you are validating.')
 
-    parser_validate.add_argument("center", type=str,
-                                 help='Contributing Centers')
+    parser_validate.add_argument("center", type=str, help='Center name')
 
     validate_group = parser_validate.add_mutually_exclusive_group()
 
@@ -163,8 +160,7 @@ def build_parser():
              'the file format.  If your filename is incorrectly named, '
              'it will be invalid.  If you know the file format you are '
              'validating, you can ignore the filename validation and skip '
-             'to file content validation. Note, the filetypes with SP at '
-             'the end are for special sponsored projects.'
+             'to file content validation.'
     )
 
     validate_group.add_argument(
@@ -211,7 +207,6 @@ def main():
     syn = synapse_login(args.syn_user, args.syn_pass)
     # func has to match the set_defaults
     args.func(syn, args)
-
 
 
 if __name__ == "__main__":
