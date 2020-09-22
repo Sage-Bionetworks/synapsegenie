@@ -24,105 +24,6 @@ logger = logging.getLogger(__name__)
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-# try:
-#   from urlparse import urlparse
-# except ImportError:
-#   from urllib.parse import urlparse
-
-# Create merged dictionary of remapped genes
-# def createDict(invalidated_genes):
-#     toRemapRemove = {}
-#     invalidated_genes = pd.Series(invalidated_genes)
-#     for i in invalidated_genes[invalidated_genes!=True]:
-#         toRemapRemove.update(i)
-#     return(toRemapRemove)
-
-# Validate genes
-# def hgncRestCall(path):
-#     """
-#     This function does the rest call to the genenames website
-
-#     :params path:     The gene symbol url path to add to the base uri
-
-#     :returns:         If the symbol exists, returns True and the corrected symbol, otherwise returns False and None.
-#     """
-#     headers = {'Accept': 'application/json',}
-
-#     uri = 'http://rest.genenames.org'
-
-#     target = urlparse(uri+path)
-#     method = 'GET'
-#     body = ''
-#     h = http.Http()
-#     response, content = h.request(target.geturl(),
-#                                   method,
-#                                   body,
-#                                   headers)
-#     if response['status'] == '200':
-#         data = json.loads(content)
-#         if len(data['response']['docs']) == 0:
-#             return(False, [None])
-#         else:
-#             mapped = [symbol['symbol'] for symbol in data['response']['docs']]
-#             return(True, mapped)
-#     else:
-#         return(False, [None])
-
-# Validation of gene names
-# def validateSymbol(gene, returnMapping=False):
-#     """
-#     This function does validation of symbols
-
-#     :params gene:               Gene symbol
-#     :params returnMapping:      Return mapping of old gene to new gene
-
-#     :returns:                   Check if the provided gene name is a correct symbol and print out genes 
-#                                 that need to be remapped or can't be mapped to anything
-#     """
-#     path = '/fetch/symbol/%s' %  gene
-#     verified, symbol = hgncRestCall(path)
-#     if not verified:
-#         path = '/fetch/prev_symbol/%s' %  gene
-#         verified, symbol = hgncRestCall(path)
-#     if not verified:
-#         path = '/fetch/alias_symbol/%s' %  gene
-#         verified, symbol = hgncRestCall(path)       
-#     if gene in symbol:
-#         return(True)
-#     else:
-#         if symbol[0] is None:
-#             #logger.error("%s cannot be remapped. Please correct." % gene)
-#             logger.warning("%s cannot be remapped. These rows will have an empty gene symbol" % gene)
-#         else:
-#             #if "MLL4", then the HUGO symbol should be KMT2D and KMT2B
-#             if len(symbol) > 1:
-#                 #logger.error("%s can be mapped to different symbols: %s. Please correct." % (gene, ", ".join(symbol)))
-#                 logger.warning("%s can be mapped to different symbols: %s. Please correct or it will be removed." % (gene, ", ".join(symbol)))
-#             else:
-#                 logger.info("%s will be remapped to %s" % (gene, symbol[0]))
-#                 if returnMapping:
-#                     return({gene: symbol[0]})
-#                 else:
-#                     return(True)
-#         if returnMapping:
-#             return({gene: float('nan')})
-#         else:
-#             return(False)
-#         #return(True)
-
-# # Remap and remove genes in dataframes given a column
-# def remapGenes(invalidated_genes, DF, col,isBedFile=False):
-#     nonmapped = []
-#     gene_dict = createDict(invalidated_genes)
-#     for key in gene_dict:
-#         value = gene_dict[key]
-#         if isBedFile:
-#         #     nonmapped.append(key)
-#         #     DF = DF[DF[col] != key]
-#         # else:
-#             DF[col][DF[col] == key] = value
-#     return(DF, nonmapped)
-
 def retry_get_url(url):
     '''
     Implement retry logic when getting urls.
@@ -320,26 +221,6 @@ def removeFloat(df):
     return(text)
 
 
-def checkGenieId(ID, center):
-    '''
-    Checks if GENIE ID is labelled correctly
-    and reformats the GENIE ID
-
-    Args:
-        ID: string
-        center: GENIE center
-
-    Return:
-        str: Formatted GENIE ID string
-    '''
-    if str(ID).startswith("%s-" % center):
-        return('GENIE-%s' % str(ID))
-    elif not str(ID).startswith('GENIE-%s-' % center):
-        return('GENIE-%s-%s' % (center, str(ID)))
-    else:
-        return(str(ID))
-
-
 def storeFile(
         syn, fileName, parentId,
         center, fileFormat, dataSubType,
@@ -367,123 +248,6 @@ def storeFile(
         fileEnt.cBioFileFormat = cBioFileFormat
     ent = syn.store(fileEnt, used=used)
     return(ent)
-
-
-def seqDateFilter(clinicalDf, processingDate, days):
-    '''
-    SEQ_DATE filter
-    SEQ_DATE - Clinical data (6 and 12 as parameters)
-    Jan-2017 , given processing date (today) ->
-        staging release (processing date - Jan-2017 < 6 months)
-    July-2016 , given processing date (today) ->
-        consortium release (processing date - July-2016 between
-        6 months - 12 months)
-
-    '''
-    copyClinicalDf = clinicalDf.copy()
-    # copyClinicalDf['SEQ_DATE'][copyClinicalDf['SEQ_DATE'].astype(str) == '999'] = "Jan-1988"
-    # copyClinicalDf['SEQ_DATE'][copyClinicalDf['SEQ_DATE'].astype(str) == '999.0'] = "Jan-1988"
-    if not isinstance(processingDate, datetime.datetime):
-        processingDate = datetime.datetime.strptime(processingDate, '%b-%Y')
-    # Remove this null statement after clinical files have been re-validated
-    # copyClinicalDf['SEQ_DATE'][copyClinicalDf['SEQ_DATE'].isnull()] = "Jan-1900"
-    copyClinicalDf['SEQ_DATE'][
-        copyClinicalDf['SEQ_DATE'] == "Release"] = "Jan-1900"
-    # clinicalDf['SEQ_DATE'][clinicalDf['SEQ_DATE'] == '999'] = "Jan-1988"
-    dates = copyClinicalDf['SEQ_DATE'].apply(
-        lambda date: datetime.datetime.strptime(date, '%b-%Y'))
-    keep = processingDate - dates > datetime.timedelta(days)
-    keepSamples = copyClinicalDf['SAMPLE_ID'][~keep]
-    # copyClinicalDf.SEQ_DATE[keep].unique()
-    return(keepSamples)
-
-
-def addClinicalHeaders(
-        clinicalDf,
-        mapping,
-        patientCols,
-        sampleCols,
-        samplePath,
-        patientPath):
-    '''
-    Add clinical file headers
-
-    Args:
-        clinicalDf: clinical dataframe
-        mapping: mapping dataframe, maps clinical columns to
-                 labels and descriptions
-        patientCols: list of patient columns
-        sampleCols: list of sample columns
-        samplePath: clinical sample path
-        patientPath: clinical patient path
-    '''
-    patientLabels = [str(mapping['labels'][mapping['cbio'] == i].values[0])
-                     for i in patientCols]
-    sampleLabels = [str(mapping['labels'][mapping['cbio'] == i].values[0])
-                    for i in sampleCols]
-    patientDesc = [str(mapping['description'][mapping['cbio'] == i].values[0])
-                   for i in patientCols]
-    sampleDesc = [str(mapping['description'][mapping['cbio'] == i].values[0])
-                  for i in sampleCols]
-    patientType = [str(mapping['colType'][mapping['cbio'] == i].values[0])
-                   for i in patientCols]
-    sampleType = [str(mapping['colType'][mapping['cbio'] == i].values[0])
-                  for i in sampleCols]
-
-    with open(patientPath, "w+") as patientFile:
-        patientFile.write("#%s\n" % "\t".join(patientLabels))
-        patientFile.write("#%s\n" % "\t".join(patientDesc))
-        patientFile.write("#%s\n" % "\t".join(patientType))
-        patientFile.write("#%s\n" % "\t".join(['1']*len(patientLabels)))
-        text = removeFloat(
-            clinicalDf[patientCols].drop_duplicates('PATIENT_ID'))
-        patientFile.write(text)
-    with open(samplePath, "w+") as sampleFile:
-        sampleFile.write("#%s\n" % "\t".join(sampleLabels))
-        sampleFile.write("#%s\n" % "\t".join(sampleDesc))
-        sampleFile.write("#%s\n" % "\t".join(sampleType))
-        sampleFile.write("#%s\n" % "\t".join(['1']*len(sampleLabels)))
-        text = removeFloat(
-            clinicalDf[sampleCols].drop_duplicates("SAMPLE_ID"))
-        sampleFile.write(text)
-
-########################################################################
-# CENTER ANONYMIZING
-########################################################################
-
-
-# def center_anon(filePath, anonymizeCenterDf):
-#     '''
-#     Deprecated
-#     '''
-#     with open(filePath, "r") as datafile:
-#         text = datafile.read()
-#     for center in anonymizeCenterDf['center']:
-#         newCenter = anonymizeCenterDf['newCenter'][
-#             anonymizeCenterDf['center'] == center].values[0]
-#         text = re.sub("\t%s\t" % center, "\t%s\t" % newCenter, text)
-#         text = re.sub("GENIE-%s-" % center, "GENIE-%s-" % newCenter, text)
-#     with open(filePath, "w") as datafile:
-#         datafile.write(text)
-
-
-# def center_convert_back(filePath, anonymizeCenterDf):
-#     '''
-#     Deprecated
-#     '''
-#     with open(filePath, "r") as datafile:
-#         text = datafile.read()
-#     for center in anonymizeCenterDf['center']:
-#         newCenter = anonymizeCenterDf['newCenter'][
-#             anonymizeCenterDf['center'] == center].values[0]
-#         text = re.sub("\t%s\t" % newCenter, "\t%s\t" % center, text)
-#         text = re.sub("GENIE-%s-" % newCenter, "GENIE-%s-" % center, text)
-#     with open(filePath, "w") as datafile:
-#         datafile.write(text)
-
-##############################################################################
-# UPDATING DATABASE
-##############################################################################
 
 
 def _check_valid_df(df, col):
@@ -689,9 +453,8 @@ def updateData(
         databaseEnt.primaryKey, toDelete)
 
 
-def updateDatabase(
-        syn, database, new_dataset, database_synid,
-        primary_key_cols, to_delete=False):
+def updateDatabase(syn, database, new_dataset, database_synid,
+                   primary_key_cols, to_delete=False):
     """
     Updates synapse tables by a row identifier with another
     dataset that has the same number and order of columns
