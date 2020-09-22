@@ -7,7 +7,7 @@ import sys
 import synapseclient
 from synapseclient.core.exceptions import SynapseHTTPError
 
-from . import config, example_filetype_format, process_functions
+from . import example_filetype_format, process_functions
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -21,8 +21,7 @@ class ValidationHelper(object):
     _validate_kwargs = []
 
     def __init__(self, syn, project_id, center, entitylist,
-                 format_registry=None,
-                 file_type=None):
+                 format_registry=None, file_type=None):
         """A validator helper class for a center's files.
 
         Args:
@@ -193,44 +192,3 @@ def _upload_to_synapse(syn, filepaths, valid, parentid=None):
             file_ent = synapseclient.File(path, parent=parentid)
             ent = syn.store(file_ent)
             logger.info("Stored to {}".format(ent.id))
-
-
-def _perform_validate(syn, args):
-    """This is the main entry point to the genie command line tool."""
-
-    # Check parentid argparse
-    _check_parentid_permission_container(syn, args.parentid)
-
-    databasetosynid_mappingdf = process_functions.get_synid_database_mappingdf(
-        syn, project_id=args.project_id)
-
-    synid = databasetosynid_mappingdf.query('Database == "centerMapping"').Id
-
-    center_mapping = syn.tableQuery('select * from {}'.format(synid.iloc[0]))
-    center_mapping_df = center_mapping.asDataFrame()
-
-    # Check center argparse
-    _check_center_input(args.center, center_mapping_df.center.tolist())
-
-    validator_cls = config.collect_validation_helper(
-        args.format_registry_packages
-    )
-
-    format_registry = config.collect_format_types(
-        args.format_registry_packages
-    )
-    logger.debug("Using {} file formats.".format(format_registry))
-    entity_list = [synapseclient.File(name=filepath, path=filepath,
-                                      parentId=None)
-                   for filepath in args.filepath]
-
-    validator = validator_cls(syn=syn, project_id=args.project_id,
-                              center=args.center,
-                              entitylist=entity_list,
-                              format_registry=format_registry,
-                              file_type=args.filetype)
-    mykwargs = dict(project_id=args.project_id)
-    valid, message = validator.validate_single_file(**mykwargs)
-
-    # Upload to synapse if parentid is specified and valid
-    _upload_to_synapse(syn, args.filepath, valid, parentid=args.parentid)

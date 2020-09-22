@@ -6,7 +6,7 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 
-class FileTypeFormat(object):
+class FileTypeFormat:
 
     _process_kwargs = ["newPath", "databaseSynId"]
 
@@ -14,11 +14,9 @@ class FileTypeFormat(object):
 
     _validation_kwargs = []
 
-    def __init__(self, syn, center, poolSize=1):
+    def __init__(self, syn, center):
         self.syn = syn
         self.center = center
-
-        # self.pool = multiprocessing.Pool(poolSize)
 
     def _get_dataframe(self, filePathList):
         '''
@@ -34,7 +32,7 @@ class FileTypeFormat(object):
         '''
         filePath = filePathList[0]
         df = pd.read_csv(filePath, sep="\t", comment="#")
-        return(df)
+        return df
 
     def read_file(self, filePathList):
         '''
@@ -49,7 +47,7 @@ class FileTypeFormat(object):
             df: Pandas dataframe of file
         '''
         df = self._get_dataframe(filePathList)
-        return(df)
+        return df
 
     def _validateFilename(self, filePath):
         '''
@@ -74,14 +72,14 @@ class FileTypeFormat(object):
             str: file type defined by self._fileType
         '''
         self._validateFilename(filePath)
-        return(self._fileType)
+        return self._fileType
 
     def process_steps(self, df, **kwargs):
         '''
         This function is modified for every single file.
         It reformats the file and stores the file into database and Synapse.
         '''
-        pass
+        return ''
 
     def preprocess(self, newpath):
         '''
@@ -113,16 +111,9 @@ class FileTypeFormat(object):
                 "%s not in parameter list" % required_parameter
             mykwargs[required_parameter] = kwargs[required_parameter]
         logger.info('PROCESSING %s' % filePath)
-        # This is done because the clinical files are being merged into a list
-        if self._fileType == "clinical":
-            path_or_df = self.read_file(filePath)
-        # If file type is vcf or maf file, processing requires a filepath
-        elif self._fileType not in ['vcf', 'maf', 'mafSP', 'md']:
-            path_or_df = self.read_file([filePath])
-        else:
-            path_or_df = filePath
+        path_or_df = self.read_file([filePath])
         path = self.process_steps(path_or_df, **mykwargs)
-        return(path)
+        return path
 
     def _validate(self, df, **kwargs):
         '''
@@ -139,8 +130,8 @@ class FileTypeFormat(object):
         '''
         errors = ""
         warnings = ""
-        logger.info("NO VALIDATION for %s files" % self._fileType)
-        return(errors, warnings)
+        logger.info(f"NO VALIDATION for {self._fileType} files")
+        return errors, warnings
 
     def validate(self, filePathList, **kwargs):
         '''
@@ -156,7 +147,8 @@ class FileTypeFormat(object):
         '''
         mykwargs = {}
         for required_parameter in self._validation_kwargs:
-            assert required_parameter in kwargs.keys(), "%s not in parameter list" % required_parameter
+            if required_parameter not in kwargs.keys():
+                raise ValueError(f"Missing '{required_parameter}' parameter.")
             mykwargs[required_parameter] = kwargs[required_parameter]
 
         errors = ""
@@ -164,14 +156,16 @@ class FileTypeFormat(object):
         try:
             df = self.read_file(filePathList)
         except Exception as e:
-            errors = "The file(s) ({filePathList}) cannot be read. Original error: {exception}".format(filePathList=filePathList,
-                                                                                                       exception=str(e))
+            errors = (f"The file(s) ({filePathList}) cannot be read. "
+                      f"Original error: {str(e)}")
             warnings = ""
 
         if not errors:
-            logger.info("VALIDATING %s" % os.path.basename(",".join(filePathList)))
+            logger.info("VALIDATING {}".format(
+                os.path.basename(",".join(filePathList))
+            ))
             errors, warnings = self._validate(df, **mykwargs)
-        
+        # File is valid if error string is blank
         valid = (errors == '')
         
         return valid, errors, warnings

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # noqa pylint: disable=line-too-long
-"""genie cli"""
+"""synapsegenie cli"""
 import argparse
 import logging
 
@@ -29,8 +29,7 @@ def synapse_login(username=None, password=None):
             raise ValueError("Please specify --syn_user, --syn_pass to specify your Synapse "
                              "login. Please view https://docs.synapse.org/articles/client_configuration.html"
                              "to learn about logging into Synapse via the Python client.")
-        syn = synapseclient.login(email=username,
-                                  password=password,
+        syn = synapseclient.login(email=username, password=password,
                                   silent=True)
     return syn
 
@@ -38,6 +37,46 @@ def synapse_login(username=None, password=None):
 def bootstrap_infra(syn, args):
     """Create GENIE-like infrastructure"""
     bootstrap.main(syn)
+
+
+def validate_single_file_cli_wrapper(syn, args):
+    """This is the main entry point to the genie command line tool."""
+    # Check parentid argparse
+    validate._check_parentid_permission_container(syn, args.parentid)
+
+    databasetosynid_mappingdf = process_functions.get_synid_database_mappingdf(
+        syn, project_id=args.project_id)
+
+    synid = databasetosynid_mappingdf.query('Database == "centerMapping"').Id
+
+    center_mapping = syn.tableQuery('select * from {}'.format(synid.iloc[0]))
+    center_mapping_df = center_mapping.asDataFrame()
+
+    # Check center argparse
+    validate._check_center_input(args.center, center_mapping_df.center.tolist())
+
+    validator_cls = config.collect_validation_helper(
+        args.format_registry_packages
+    )
+
+    format_registry = config.collect_format_types(
+        args.format_registry_packages
+    )
+    logger.debug("Using {} file formats.".format(format_registry))
+    entity_list = [synapseclient.File(name=filepath, path=filepath,
+                                      parentId=None)
+                   for filepath in args.filepath]
+
+    validator = validator_cls(syn=syn, project_id=args.project_id,
+                              center=args.center,
+                              entitylist=entity_list,
+                              format_registry=format_registry,
+                              file_type=args.filetype)
+    mykwargs = dict(project_id=args.project_id)
+    valid, message = validator.validate_single_file(**mykwargs)
+
+    # Upload to synapse if parentid is specified and valid
+    validate._upload_to_synapse(syn, args.filepath, valid, parentid=args.parentid)
 
 
 def process_cli_wrapper(syn, args):
@@ -142,18 +181,16 @@ def build_parser():
     )
 
     parser_validate = subparsers.add_parser(
-        'validate', help='Validates GENIE file formats',
+        'validate-single-file',
+        help='Validates a file whose file format is specified by the format '
+             'registry',
         parents=[parent_parser]
     )
 
-    parser_validate.add_argument(
-        "filepath", type=str, nargs="+",
-        help='File(s) that you are validating.'
-             'If you validation your clinical files and you have both sample '
-             'and patient files, you must provide both')
+    parser_validate.add_argument("filepath", type=str, nargs="+",
+                                 help='File that you are validating.')
 
-    parser_validate.add_argument("center", type=str,
-                                 help='Contributing Centers')
+    parser_validate.add_argument("center", type=str, help='Center name')
 
     validate_group = parser_validate.add_mutually_exclusive_group()
 
@@ -163,8 +200,7 @@ def build_parser():
              'the file format.  If your filename is incorrectly named, '
              'it will be invalid.  If you know the file format you are '
              'validating, you can ignore the filename validation and skip '
-             'to file content validation. Note, the filetypes with SP at '
-             'the end are for special sponsored projects.'
+             'to file content validation.'
     )
 
     validate_group.add_argument(
@@ -174,7 +210,7 @@ def build_parser():
              'to this directory.'
     )
 
-    parser_validate.set_defaults(func=validate._perform_validate)
+    parser_validate.set_defaults(func=validate_single_file_cli_wrapper)
 
     parser_bootstrap = subparsers.add_parser('bootstrap-infra',
                                              help='Create GENIE-like infra',
@@ -211,7 +247,6 @@ def main():
     syn = synapse_login(args.syn_user, args.syn_pass)
     # func has to match the set_defaults
     args.func(syn, args)
-
 
 
 if __name__ == "__main__":

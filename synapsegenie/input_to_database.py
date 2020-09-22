@@ -198,7 +198,7 @@ def _get_status_and_error_list(valid, message, entities):
 
 
 def validatefile(syn, project_id, entities, validation_status_table, error_tracker_table,
-                 center, threads, format_registry=None,
+                 center, format_registry=None,
                  validator_cls=None):
     '''Validate a list of entities.
 
@@ -654,7 +654,7 @@ def validation(syn, project_id, center, center_files,
             syn, project_id, ents,
             validation_status_table,
             error_tracker_table,
-            center=center, threads=1,
+            center=center,
             format_registry=format_registry,
             validator_cls=validator_cls)
 
