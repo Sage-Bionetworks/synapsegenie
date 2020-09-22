@@ -11,6 +11,7 @@ syn = mock.create_autospec(synapseclient.Synapse)
 
 
 class ArgParser:
+    """Example argparser"""
     parentid = None
     filetype = None
     project_id = None

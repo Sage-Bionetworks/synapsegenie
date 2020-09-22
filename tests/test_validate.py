@@ -2,13 +2,11 @@
 from unittest import mock
 from unittest.mock import Mock, patch
 
-import pandas as pd
 import pytest
 import synapseclient
 from synapseclient.core.exceptions import SynapseHTTPError
 
-from synapsegenie import (config, example_filetype_format,
-                          process_functions, validate)
+from synapsegenie import (example_filetype_format, validate)
 
 CENTER = "SAGE"
 syn = mock.create_autospec(synapseclient.Synapse)
@@ -31,6 +29,7 @@ WRONG_NAME_ENT = synapseclient.File(name="wrong.txt",
 
 
 class FileFormat(example_filetype_format.FileTypeFormat):
+    """Example file format"""
     _fileType = "clinical"
 
 
@@ -221,12 +220,14 @@ def test_valid__check_parentid_permission_container():
 
 
 def test_valid__check_center_input():
+    """Check valid center input"""
     center = "FOO"
     center_list = ["FOO", "WOW"]
     validate._check_center_input(center, center_list)
 
 
 def test_invalid__check_center_input():
+    """Check that center is invalid"""
     center = "BARFOO"
     center_list = ["FOO", "WOW"]
     with pytest.raises(ValueError,
@@ -236,9 +237,7 @@ def test_invalid__check_center_input():
 
 
 def test_valid__upload_to_synapse():
-    """
-    Test upload of file to synapse under right conditions
-    """
+    """Test upload of file to synapse under right conditions"""
     ent = synapseclient.File(id="syn123", parentId="syn222")
     with patch.object(syn, "store", return_value=ent) as patch_synstore:
         validate._upload_to_synapse(syn, ['foo'], True, parentid="syn123")
