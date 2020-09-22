@@ -118,33 +118,7 @@ def walk_return_empty():
     yield ([], [], [])
 
 
-def test_main_get_center_input_files():
-    '''
-    Test to make sure center input files are gotten
-    excluding the vcf files since process main is specified
-    '''
-    syn_get_effects = [sample_clinical_entity, patient_clinical_entity]
-    expected_center_file_list = [syn_get_effects]
-
-    calls = [mock.call(sample_clinical_synid, downloadFile=True),
-             mock.call(patient_clinical_synid, downloadFile=True)]
-
-    with patch.object(synapseutils, "walk",
-                      return_value=walk_return()) as patch_synapseutils_walk,\
-         patch.object(syn, "get",
-                      side_effect=syn_get_effects) as patch_syn_get:
-        center_file_list = input_to_database.get_center_input_files(syn,
-                                                                    "syn12345",
-                                                                    center)
-
-        assert len(center_file_list) == len(expected_center_file_list)
-        assert len(center_file_list[0]) == 2
-        assert center_file_list == expected_center_file_list
-        patch_synapseutils_walk.assert_called_once_with(syn, 'syn12345')
-        patch_syn_get.assert_has_calls(calls)
-
-
-def test_mutation_get_center_input_files():
+def test_get_center_input_files():
     """
     Test to make sure center input files are gotten
     including the vcf files since process vcf is specified
@@ -152,23 +126,24 @@ def test_mutation_get_center_input_files():
     syn_get_effects = [sample_clinical_entity, patient_clinical_entity,
                        vcf1_entity, vcf2_entity]
     expected_center_file_list = [
-        [vcf1_entity], [vcf2_entity],
-        [sample_clinical_entity, patient_clinical_entity]]
+        [sample_clinical_entity], [patient_clinical_entity],
+        [vcf1_entity], [vcf2_entity]
+    ]
     calls = [
         mock.call(sample_clinical_synid, downloadFile=True),
         mock.call(patient_clinical_synid, downloadFile=True),
         mock.call(vcf1synid, downloadFile=True),
-        mock.call(vcf2synid, downloadFile=True)]
+        mock.call(vcf2synid, downloadFile=True)
+    ]
 
     with patch.object(synapseutils, "walk",
                       return_value=walk_return()) as patch_synapseutils_walk,\
          patch.object(syn, "get",
                       side_effect=syn_get_effects) as patch_syn_get:
         center_file_list = input_to_database.get_center_input_files(
-            syn, "syn12345", center, process="mutation"
+            syn, "syn12345", center,
         )
         assert len(center_file_list) == len(expected_center_file_list)
-        assert len(center_file_list[2]) == 2
         assert center_file_list == expected_center_file_list
         patch_synapseutils_walk.assert_called_once_with(syn, 'syn12345')
         patch_syn_get.assert_has_calls(calls)
@@ -182,7 +157,7 @@ def test_empty_get_center_input_files():
     with patch.object(synapseutils, "walk",
                       return_value=walk_return_empty()) as patch_synapseutils_walk:
         center_file_list = input_to_database.get_center_input_files(
-            syn, "syn12345", center, process="vcf")
+            syn, "syn12345", center)
         assert center_file_list == []
         patch_synapseutils_walk.assert_called_once_with(syn, 'syn12345')
 
@@ -781,7 +756,6 @@ class TestValidation:
     def test_validation(self):
         """Test validation steps"""
         modified_on = 1561143558000
-        process = "main"
         databaseToSynIdMapping = {'Database': ["clinical", 'validationStatus', 'errorTracker'],
                                 'Id': ['syn222', 'syn333', 'syn444']}
         databaseToSynIdMappingDf = pd.DataFrame(databaseToSynIdMapping)
@@ -817,7 +791,7 @@ class TestValidation:
              patch.object(input_to_database, "update_status_and_error_tables"):
 
             valid_filedf = input_to_database.validation(
-                syn, "syn123", center, process,
+                syn, "syn123", center,
                 entities, databaseToSynIdMappingDf,
                 format_registry={"test": valiate_cls},
                 validator_cls=ValidationHelper
@@ -837,12 +811,12 @@ class TestValidation:
             )
 
 @pytest.mark.parametrize(
-    'process, genieclass, filetype', [
-        ('main', Mock(), 'clinical'),
-        ('main', Mock(), 'maf'),
+    'genieclass, filetype', [
+        (Mock(), 'clinical'),
+        (Mock(), 'maf'),
     ]
 )
-def test_main_processfile(process, genieclass, filetype):
+def test_main_processfile(genieclass, filetype):
     validfiles = {'id': ['syn1'],
                   'path': ['/path/to/data_clinical_supp.txt'],
                   'fileType': [filetype],
@@ -850,7 +824,6 @@ def test_main_processfile(process, genieclass, filetype):
     validfilesdf = pd.DataFrame(validfiles)
     center = "SAGE"
     path_to_genie = "./"
-    oncotree_link = "www.google.com"
     center_mapping = {'stagingSynId': ["syn123"],
                       'center': [center]}
     center_mapping_df = pd.DataFrame(center_mapping)
@@ -862,7 +835,6 @@ def test_main_processfile(process, genieclass, filetype):
     input_to_database.processfiles(
         syn, validfilesdf, center, path_to_genie,
         center_mapping_df, databaseToSynIdMappingDf,
-        processing=process,
         format_registry=format_registry
     )
     genieclass.assert_called_once()
@@ -877,7 +849,6 @@ def test_mainnone_processfile():
     validfilesdf = pd.DataFrame(validfiles)
     center = "SAGE"
     path_to_genie = "./"
-    oncotree_link = "www.google.com"
     center_mapping = {'stagingSynId': ["syn123"],
                       'center': [center]}
     center_mapping_df = pd.DataFrame(center_mapping)
@@ -890,6 +861,5 @@ def test_mainnone_processfile():
     input_to_database.processfiles(
         syn, validfilesdf, center, path_to_genie,
         center_mapping_df, databaseToSynIdMappingDf,
-        processing="main",
         format_registry={"main": process_cls})
     process_cls.assert_not_called()

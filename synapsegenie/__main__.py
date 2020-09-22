@@ -42,13 +42,13 @@ def bootstrap_infra(syn, args):
 
 def process_cli_wrapper(syn, args):
     """Process CLI wrapper"""
-    process(syn, args.process, args.project_id, center=args.center,
+    process(syn, args.project_id, center=args.center,
             pemfile=args.pemfile, delete_old=args.delete_old,
             only_validate=args.only_validate, debug=args.debug,
             format_registry_packages=args.format_registry_packages)
 
 
-def process(syn, process, project_id, center=None, pemfile=None,
+def process(syn, project_id, center=None, pemfile=None,
             delete_old=False, only_validate=False, debug=False,
             format_registry_packages=None):
     """Process files"""
@@ -88,7 +88,7 @@ def process(syn, process, project_id, center=None, pemfile=None,
 
     for process_center in centers:
         input_to_database.center_input_to_database(
-            syn, project_id, process_center, process,
+            syn, project_id, process_center,
             only_validate, databaseToSynIdMappingDf,
             center_mapping_df,
             delete_old=delete_old,
@@ -183,7 +183,6 @@ def build_parser():
 
     parser_process = subparsers.add_parser('process', help='Process files',
                                            parents=[parent_parser])
-    parser_process.add_argument("process", choices=['main'])
     parser_process.add_argument('--center', help='The centers')
     parser_process.add_argument(
         "--pemfile", type=str,
