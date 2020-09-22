@@ -1,4 +1,4 @@
-# Import logging last to not take in synapseclient logging
+"""Initialize genie"""
 import logging
 from .__version__ import __version__
 
