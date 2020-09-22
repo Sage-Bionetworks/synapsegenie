@@ -132,10 +132,8 @@ def build_parser():
     parser_validate.add_argument("center", type=str, help='Contributing Centers')
 
     parser_validate.add_argument("--format_registry_packages", type=str, nargs="+",
-                                 default=["genie"],
+                                 default=["example_registry"],
                                  help="Python package name(s) to get valid file formats from (default: %(default)s).")
-
-    parser_validate.add_argument("--oncotree_link", type=str, help="Link to oncotree code")
 
     validate_group = parser_validate.add_mutually_exclusive_group()
 
@@ -153,13 +151,9 @@ def build_parser():
                                      'If specified, your valid files will be uploaded '
                                      'to this directory.')
 
-    # TODO: remove this default when private genie project is ready
     parser_validate.add_argument("--project_id", type=str,
                                  default="syn3380222",
                                  help='Synapse Project ID where data is stored.')
-
-    parser_validate.add_argument("--nosymbol-check", action='store_true',
-                                 help='Do not check hugo symbols of fusion and cna file')
 
     parser_validate.set_defaults(func=validate._perform_validate)
 

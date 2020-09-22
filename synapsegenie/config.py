@@ -89,6 +89,3 @@ def collect_validation_helper(package_names):
     """
     validation_cls = find_subclasses(package_names, validate.ValidationHelper)
     return validation_cls[0]
-
-# PROCESS_FILES_LIST = [x for x in get_subclasses(BASE_CLASS)]
-# PROCESS_FILES = make_format_registry_dict(cls_list=PROCESS_FILES_LIST)
