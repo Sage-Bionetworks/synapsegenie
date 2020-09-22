@@ -32,7 +32,7 @@ class FileTypeFormat:
         '''
         filePath = filePathList[0]
         df = pd.read_csv(filePath, sep="\t", comment="#")
-        return(df)
+        return df
 
     def read_file(self, filePathList):
         '''
@@ -47,7 +47,7 @@ class FileTypeFormat:
             df: Pandas dataframe of file
         '''
         df = self._get_dataframe(filePathList)
-        return(df)
+        return df
 
     def _validateFilename(self, filePath):
         '''
@@ -72,14 +72,14 @@ class FileTypeFormat:
             str: file type defined by self._fileType
         '''
         self._validateFilename(filePath)
-        return(self._fileType)
+        return self._fileType
 
     def process_steps(self, df, **kwargs):
         '''
         This function is modified for every single file.
         It reformats the file and stores the file into database and Synapse.
         '''
-        pass
+        return ''
 
     def preprocess(self, newpath):
         '''
@@ -130,8 +130,8 @@ class FileTypeFormat:
         '''
         errors = ""
         warnings = ""
-        logger.info("NO VALIDATION for %s files" % self._fileType)
-        return(errors, warnings)
+        logger.info(f"NO VALIDATION for {self._fileType} files")
+        return errors, warnings
 
     def validate(self, filePathList, **kwargs):
         '''
