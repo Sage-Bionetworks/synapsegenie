@@ -98,13 +98,6 @@ class ValidationHelper(object):
 
         return (valid, message)
 
-# TODO: Remove this at some point
-class GenieValidationHelper(ValidationHelper):
-    """A validator helper class for AACR Project Genie.
-    """
-
-    _validate_kwargs = ['oncotree_link', 'nosymbol_check']
-
 
 def collect_errors_and_warnings(errors, warnings):
     '''Aggregates error and warnings into a string.
@@ -183,27 +176,6 @@ def _check_center_input(center, center_list):
                          f"centers: {', '.join(center_list)}")
 
 
-def _get_oncotreelink(syn, databasetosynid_mappingdf, oncotree_link=None):
-    """
-    Gets oncotree link unless a link is specified by the user
-
-    Args:
-        syn: Synapse object
-        databasetosynid_mappingdf: database to synid mapping
-        oncotree_link: link to oncotree. Default is None
-
-    Returns:
-        oncotree link
-
-    """
-    if oncotree_link is None:
-        oncolink = databasetosynid_mappingdf.query(
-            'Database == "oncotreeLink"').Id
-        oncolink_ent = syn.get(oncolink.iloc[0])
-        oncotree_link = oncolink_ent.externalURL
-    return oncotree_link
-
-
 def _upload_to_synapse(syn, filepaths, valid, parentid=None):
     """
     Upload to synapse if parentid is specified and valid
@@ -240,8 +212,6 @@ def _perform_validate(syn, args):
     # Check center argparse
     _check_center_input(args.center, center_mapping_df.center.tolist())
 
-    args.oncotree_link = _get_oncotreelink(syn, databasetosynid_mappingdf,
-                                           oncotree_link=args.oncotree_link)
     validator_cls = config.collect_validation_helper(
         args.format_registry_packages
     )
@@ -259,9 +229,7 @@ def _perform_validate(syn, args):
                               entitylist=entity_list,
                               format_registry=format_registry,
                               file_type=args.filetype)
-    mykwargs = dict(oncotree_link=args.oncotree_link,
-                    nosymbol_check=args.nosymbol_check,
-                    project_id=args.project_id)
+    mykwargs = dict(project_id=args.project_id)
     valid, message = validator.validate_single_file(**mykwargs)
 
     # Upload to synapse if parentid is specified and valid

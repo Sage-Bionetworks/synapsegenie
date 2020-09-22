@@ -222,8 +222,7 @@ def _get_status_and_error_list(valid, message, entities):
 
 
 def validatefile(syn, project_id, entities, validation_status_table, error_tracker_table,
-                 center, threads, oncotree_link,
-                 format_registry=None,
+                 center, threads, format_registry=None,
                  validator_cls=None):
     '''Validate a list of entities.
 
@@ -235,7 +234,6 @@ def validatefile(syn, project_id, entities, validation_status_table, error_track
         validation_statusdf: Validation status dataframe
         error_trackerdf: Invalid files error tracking dataframe
         center: Center of interest
-        oncotree_link: Oncotree url
 
     Returns:
         tuple: input_status_list - status of input files,
@@ -268,9 +266,7 @@ def validatefile(syn, project_id, entities, validation_status_table, error_track
                               format_registry=format_registry)
     filetype = validator.file_type
     if check_file_status['to_validate']:
-        valid, message = validator.validate_single_file(
-            oncotree_link=oncotree_link, nosymbol_check=False
-        )
+        valid, message = validator.validate_single_file()
         logger.info("VALIDATION COMPLETE")
         input_status_list, invalid_errors_list = _get_status_and_error_list(
             valid, message, entities)
@@ -293,7 +289,7 @@ def validatefile(syn, project_id, entities, validation_status_table, error_track
 
 # TODO: Create ProcessHelper class
 def processfiles(syn, validfiles, center, path_to_genie,
-                 center_mapping_df, oncotree_link, databaseToSynIdMappingDf,
+                 center_mapping_df, databaseToSynIdMappingDf,
                  processing="main",
                  genome_nexus_pkg="/root/annotation-tools",
                  format_registry=None):
@@ -306,7 +302,6 @@ def processfiles(syn, validfiles, center, path_to_genie,
         center: GENIE center name
         path_to_genie: Path to GENIE workdir
         center_mapping_df: Center mapping dataframe
-        oncotree_link: Link to oncotree
         databaseToSynIdMappingDf: Database to synapse id mapping dataframe
         processing: Processing type. Defaults to main
     """
@@ -338,7 +333,7 @@ def processfiles(syn, validfiles, center, path_to_genie,
                 processor.process(
                     filePath=row['path'], newPath=newpath,
                     parentId=center_staging_synid, databaseSynId=tableid,
-                    oncotree_link=oncotree_link, fileSynId=row['id'],
+                    fileSynId=row['id'],
                     databaseToSynIdMappingDf=databaseToSynIdMappingDf
                 )
     else:
@@ -647,8 +642,7 @@ def _update_tables_content(validation_statusdf, error_trackingdf):
 
 def validation(syn, project_id, center, process,
                center_files, database_synid_mappingdf,
-               oncotree_link, format_registry,
-               validator_cls):
+               format_registry, validator_cls):
     '''
     Validation of all center files
 
@@ -658,7 +652,6 @@ def validation(syn, project_id, center, process,
         process: main, vcf, maf
         center_mapping_df: center mapping dataframe
         thread: Unused parameter for now
-        oncotree_link: Link to oncotree
 
     Returns:
         dataframe: Valid files
@@ -699,7 +692,6 @@ def validation(syn, project_id, center, process,
             validation_status_table,
             error_tracker_table,
             center=center, threads=1,
-            oncotree_link=oncotree_link,
             format_registry=format_registry,
             validator_cls=validator_cls)
 
@@ -752,7 +744,7 @@ def validation(syn, project_id, center, process,
 def center_input_to_database(syn, project_id, center, process,
                              only_validate, database_to_synid_mappingdf,
                              center_mapping_df, delete_old=False,
-                             oncotree_link=None, genie_annotation_pkg=None,
+                             genie_annotation_pkg=None,
                              format_registry=None, validator_cls=None):
     if only_validate:
         log_path = os.path.join(
@@ -799,7 +791,7 @@ def center_input_to_database(syn, project_id, center, process,
     if center_files:
         validFiles = validation(syn, project_id, center, process, center_files,
                                 database_to_synid_mappingdf,
-                                oncotree_link, format_registry, validator_cls)
+                                format_registry, validator_cls)
     else:
         logger.info("{} has not uploaded any files".format(center))
         return
@@ -846,7 +838,7 @@ def center_input_to_database(syn, project_id, center, process,
         #         processTrackerSynId, processTrackerDf))
 
         processfiles(syn, validFiles, center, path_to_genie,
-                     center_mapping_df, oncotree_link,
+                     center_mapping_df,
                      database_to_synid_mappingdf,
                      processing=process,
                      genome_nexus_pkg=genie_annotation_pkg,

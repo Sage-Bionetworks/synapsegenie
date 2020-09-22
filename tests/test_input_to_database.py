@@ -10,7 +10,7 @@ import synapseutils
 
 from synapsegenie import input_to_database, process_functions
 import synapsegenie.config
-from synapsegenie.validate import GenieValidationHelper
+from synapsegenie.validate import ValidationHelper
 
 syn = mock.create_autospec(synapseclient.Synapse)
 sample_clinical_synid = 'syn2222'
@@ -384,13 +384,13 @@ def test_valid_validatefile():
     expected_results = ([{'entity': entity, 'status': 'VALIDATED',
                           'fileType': filetype, 'center': center}],
                         [], [])
-    with patch.object(GenieValidationHelper, "determine_filetype",
+    with patch.object(ValidationHelper, "determine_filetype",
                       return_value=filetype) as patch_determine_filetype,\
          patch.object(input_to_database, "check_existing_file_status",
                       return_value={'status_list': [],
                                     'error_list': [],
                                     'to_validate': True}) as patch_check, \
-         patch.object(GenieValidationHelper, "validate_single_file",
+         patch.object(ValidationHelper, "validate_single_file",
                       return_value=(valid, message)) as patch_validate,\
          patch.object(input_to_database, "_get_status_and_error_list",
                       return_value=status_error_list_results) as patch_get_staterror_list,\
@@ -399,12 +399,11 @@ def test_valid_validatefile():
 
         validate_results = input_to_database.validatefile(
             syn, None, entities, validation_statusdf,
-            error_trackerdf, center, threads, oncotree_link,
-            validator_cls=GenieValidationHelper)
+            error_trackerdf, center, threads,
+            validator_cls=ValidationHelper)
 
         assert expected_results == validate_results
-        patch_validate.assert_called_once_with(
-            oncotree_link=oncotree_link, nosymbol_check=False)
+        patch_validate.assert_called_once_with()
         patch_check.assert_called_once_with(
             validation_statusdf, error_trackerdf, entities)
         patch_determine_filetype.assert_called_once()
@@ -440,26 +439,25 @@ def test_invalid_validatefile():
                           'fileType': filetype, 'center': center}],
                           [(['data_clinical_supp_SAGE.txt'], 'Is invalid', ['333', '444'])])
 
-    with patch.object(GenieValidationHelper, "determine_filetype",
+    with patch.object(ValidationHelper, "determine_filetype",
                       return_value=filetype) as patch_determine_filetype,\
          patch.object(input_to_database, "check_existing_file_status",
                       return_value={'status_list': [],
                                     'error_list': [],
                                     'to_validate': True}) as patch_check, \
-         patch.object(GenieValidationHelper, "validate_single_file",
+         patch.object(ValidationHelper, "validate_single_file",
                       return_value=(valid, message)) as patch_validate,\
          patch.object(input_to_database, "_get_status_and_error_list",
                       return_value=status_error_list_results) as patch_get_staterror_list:
 
         validate_results = input_to_database.validatefile(
             syn, None, entities, validation_statusdf,
-            error_trackerdf, center, threads, oncotree_link,
-            validator_cls=GenieValidationHelper
+            error_trackerdf, center, threads,
+            validator_cls=ValidationHelper
         )
 
         assert expected_results == validate_results
-        patch_validate.assert_called_once_with(
-            oncotree_link=oncotree_link, nosymbol_check=False)
+        patch_validate.assert_called_once_with()
         patch_check.assert_called_once_with(
             validation_statusdf, error_trackerdf, entities)
         patch_determine_filetype.assert_called_once()
@@ -498,11 +496,11 @@ def test_already_validated_validatefile():
                         [{'entity': entity, 'errors': errors,
                           'fileType': filetype, 'center': center}],
                         [])
-    with patch.object(GenieValidationHelper, "determine_filetype",
+    with patch.object(ValidationHelper, "determine_filetype",
                       return_value=filetype) as patch_determine_filetype,\
          patch.object(input_to_database, "check_existing_file_status",
                       return_value=check_file_status_dict) as patch_check, \
-         patch.object(GenieValidationHelper, "validate_single_file",
+         patch.object(ValidationHelper, "validate_single_file",
                       return_value=(valid, errors)) as patch_validate,\
          patch.object(input_to_database, "_get_status_and_error_list",
                       return_value=status_error_list_results) as patch_get_staterror_list,\
@@ -512,7 +510,7 @@ def test_already_validated_validatefile():
         validate_results = input_to_database.validatefile(
             syn, None, entities, validation_statusdf,
             error_trackerdf, center, threads, oncotree_link,
-            validator_cls=GenieValidationHelper)
+            validator_cls=ValidationHelper)
 
         assert expected_results == validate_results
         patch_validate.assert_not_called()
@@ -821,9 +819,8 @@ class TestValidation:
             valid_filedf = input_to_database.validation(
                 syn, "syn123", center, process,
                 entities, databaseToSynIdMappingDf,
-                oncotree_link,
                 format_registry={"test": valiate_cls},
-                validator_cls=GenieValidationHelper
+                validator_cls=ValidationHelper
             )
             assert patch_query.call_count == 2
             patch_validatefile.assert_called_once_with(
@@ -831,9 +828,8 @@ class TestValidation:
                 validationstatus_mock,
                 errortracking_mock,
                 center='SAGE', threads=1,
-                oncotree_link=oncotree_link,
                 format_registry={"test": valiate_cls},
-                validator_cls=GenieValidationHelper
+                validator_cls=ValidationHelper
             )
 
             assert valid_filedf.equals(
@@ -865,14 +861,13 @@ def test_main_processfile(process, genieclass, filetype):
 
     input_to_database.processfiles(
         syn, validfilesdf, center, path_to_genie,
-        center_mapping_df, oncotree_link, databaseToSynIdMappingDf,
+        center_mapping_df, databaseToSynIdMappingDf,
         processing=process,
         format_registry=format_registry
     )
     genieclass.assert_called_once()
 
 
-# TODO: Fix this
 def test_mainnone_processfile():
     """If file type is None, the processing function is not called"""
     validfiles = {'id': ['syn1'],
@@ -894,7 +889,7 @@ def test_mainnone_processfile():
     # with patch.object(clinical, "process") as patch_clin:
     input_to_database.processfiles(
         syn, validfilesdf, center, path_to_genie,
-        center_mapping_df, oncotree_link, databaseToSynIdMappingDf,
+        center_mapping_df, databaseToSynIdMappingDf,
         processing="main",
         format_registry={"main": process_cls})
     process_cls.assert_not_called()

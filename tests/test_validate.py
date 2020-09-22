@@ -43,7 +43,7 @@ def test_perfect_determine_filetype():
     ent_list = [SAMPLE_ENT]
     with patch.object(FileFormat, "validateFilename",
                       return_value=filetype):
-        validator = validate.GenieValidationHelper(
+        validator = validate.ValidationHelper(
             syn, None, CENTER, ent_list,
             format_registry={filetype: FileFormat}
         )
@@ -58,7 +58,7 @@ def test_wrongfilename_noerror_determine_filetype():
     ent_list = [WRONG_NAME_ENT]
     with patch.object(FileFormat, "validateFilename",
                       side_effect=AssertionError):
-        validator = validate.GenieValidationHelper(
+        validator = validate.ValidationHelper(
             syn, project_id=None,
             center=CENTER, entitylist=ent_list,
             format_registry={"wrong": FileFormat})
@@ -246,7 +246,7 @@ class argparser:
     center = "try"
     filepath = "path.csv"
     nosymbol_check = False
-    format_registry_packages = ["genie"]
+    format_registry_packages = ["example_registry"]
     project_id = "syn1234"
 
     def asDataFrame(self):
@@ -255,26 +255,6 @@ class argparser:
                          "center": ["try", 'foo']}
         databasetosynid_mappingdf = pd.DataFrame(database_dict)
         return databasetosynid_mappingdf
-
-
-def test_notnone_get_oncotree_link():
-    """Test link passed in by user is used"""
-    arg = argparser()
-    url = "https://www.synapse.org"
-    link = validate._get_oncotreelink(syn, arg.asDataFrame(),
-                                      oncotree_link=url)
-    assert link == url
-
-
-def test_none__getoncotreelink():
-    """Test oncotree link is gotten"""
-    arg = argparser()
-    url = "https://www.synapse.org"
-    link = synapseclient.File("foo", parentId="foo", externalURL=url)
-    with patch.object(syn, "get", return_value=link) as patch_synget:
-        oncolink = validate._get_oncotreelink(syn, arg.asDataFrame())
-        patch_synget.assert_called_once_with(ONCOTREE_ENT)
-        assert oncolink == url
 
 
 def test_valid__upload_to_synapse():
@@ -300,12 +280,11 @@ def test_perform_validate():
          patch.object(syn, "tableQuery",
                       return_value=arg) as patch_syn_tablequery,\
          patch.object(validate, "_check_center_input") as patch_check_center,\
-         patch.object(validate, "_get_oncotreelink") as patch_get_onco,\
          patch.object(
             config, "collect_validation_helper",
-            return_value=validate.GenieValidationHelper) as patch_val_col,\
+            return_value=validate.ValidationHelper) as patch_val_col,\
          patch.object(config, "collect_format_types") as patch_collect,\
-         patch.object(validate.GenieValidationHelper,
+         patch.object(validate.ValidationHelper,
                       "validate_single_file",
                       return_value=(valid, 'foo')) as patch_validate,\
          patch.object(validate, "_upload_to_synapse") as patch_syn_upload:
@@ -314,11 +293,8 @@ def test_perform_validate():
         patch_getdb.assert_called_once_with(syn, project_id=arg.project_id)
         patch_syn_tablequery.assert_called_once_with('select * from syn123')
         patch_check_center.assert_called_once_with(arg.center, ["try", "foo"])
-        patch_get_onco.assert_called_once()
-        patch_collect.assert_called_once_with(["genie"])
-        patch_val_col.assert_called_once_with(["genie"])
-        patch_validate.assert_called_once_with(oncotree_link=arg.oncotree_link,
-                                               nosymbol_check=arg.nosymbol_check,
-                                               project_id=arg.project_id)
+        patch_collect.assert_called_once_with(["example_registry"])
+        patch_val_col.assert_called_once_with(["example_registry"])
+        patch_validate.assert_called_once_with(project_id=arg.project_id)
         patch_syn_upload.assert_called_once_with(
             syn, arg.filepath, valid, parentid=arg.parentid)
