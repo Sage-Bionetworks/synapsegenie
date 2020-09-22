@@ -1,7 +1,7 @@
 """Configuration to obtain registry classes"""
 import importlib
 import logging
-from typing import ClassVar, Dict, List, Type
+from typing import Dict, List, Type
 
 from .example_filetype_format import FileTypeFormat
 from .validate import ValidationHelper
