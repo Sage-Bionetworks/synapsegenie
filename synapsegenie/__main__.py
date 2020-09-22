@@ -109,79 +109,82 @@ def process(syn, process, project_id, center=None, pemfile=None,
 
 def build_parser():
     """Build CLI parsers"""
-    parser = argparse.ArgumentParser(description='GENIE processing')
+    parser = argparse.ArgumentParser(
+        description='synapsegenie will validate and process files in a '
+                    'specified project given a file format registry package.'
+    )
 
     parser.add_argument("--syn_user", type=str, help='Synapse username')
 
     parser.add_argument("--syn_pass", type=str, help='Synapse password')
 
     parser.add_argument('-v', '--version', action='version',
-                        version='genie {}'.format(__version__))
+                        version='%(prog)s {}'.format(__version__))
 
-    subparsers = parser.add_subparsers(title='commands',
-                                       description='The following commands are available:',
-                                       help='For additional help: "genie <COMMAND> -h"')
-
-    parser_validate = subparsers.add_parser('validate', help='Validates GENIE file formats')
-
-    parser_validate.add_argument("filepath", type=str, nargs="+",
-                                 help='File(s) that you are validating.'
-                                      'If you validation your clinical files and you have both sample and '
-                                      'patient files, you must provide both')
-
-    parser_validate.add_argument("center", type=str, help='Contributing Centers')
-
-    parser_validate.add_argument("--format_registry_packages", type=str, nargs="+",
-                                 default=["example_registry"],
-                                 help="Python package name(s) to get valid file formats from (default: %(default)s).")
-
-    validate_group = parser_validate.add_mutually_exclusive_group()
-
-    validate_group.add_argument("--filetype", type=str,
-                                help='By default, the validator uses the filename to match '
-                                     'the file format.  If your filename is incorrectly named, '
-                                     'it will be invalid.  If you know the file format you are '
-                                     'validating, you can ignore the filename validation and skip '
-                                     'to file content validation. '
-                                     'Note, the filetypes with SP at '
-                                     'the end are for special sponsored projects.')
-
-    validate_group.add_argument("--parentid", type=str, default=None,
-                                help='Synapse id of center input folder. '
-                                     'If specified, your valid files will be uploaded '
-                                     'to this directory.')
-
-    parser_validate.add_argument("--project_id", type=str,
-                                 default="syn3380222",
-                                 help='Synapse Project ID where data is stored.')
-
-    parser_validate.set_defaults(func=validate._perform_validate)
-
-    parser_bootstrap = subparsers.add_parser('bootstrap-infra',
-                                            help='Create GENIE-like infra')
-    parser_bootstrap.add_argument(
+    # Create parent parsers that contain arguments per command but don't
+    # want them to be on a top level parser.
+    parent_parser = argparse.ArgumentParser(add_help=False)
+    parent_parser.add_argument(
         "--format_registry_packages", type=str, nargs="+",
         default=["example_registry"],
         help="Python package name(s) to get valid file formats from "
              "(default: %(default)s)."
     )
 
+    parent_parser.add_argument(
+        "--project_id", type=str, required=True,
+        help='Synapse Project ID where data is stored.'
+    )
+
+    subparsers = parser.add_subparsers(
+        title='commands', description='The following commands are available:',
+        help='For additional help: "synapsegenie <COMMAND> -h"'
+    )
+
+    parser_validate = subparsers.add_parser(
+        'validate', help='Validates GENIE file formats',
+        parents=[parent_parser]
+    )
+
+    parser_validate.add_argument(
+        "filepath", type=str, nargs="+",
+        help='File(s) that you are validating.'
+             'If you validation your clinical files and you have both sample '
+             'and patient files, you must provide both')
+
+    parser_validate.add_argument("center", type=str,
+                                 help='Contributing Centers')
+
+    validate_group = parser_validate.add_mutually_exclusive_group()
+
+    validate_group.add_argument(
+        "--filetype", type=str,
+        help='By default, the validator uses the filename to match '
+             'the file format.  If your filename is incorrectly named, '
+             'it will be invalid.  If you know the file format you are '
+             'validating, you can ignore the filename validation and skip '
+             'to file content validation. Note, the filetypes with SP at '
+             'the end are for special sponsored projects.'
+    )
+
+    validate_group.add_argument(
+        "--parentid", type=str, default=None,
+        help='Synapse id of center input folder. '
+             'If specified, your valid files will be uploaded '
+             'to this directory.'
+    )
+
+    parser_validate.set_defaults(func=validate._perform_validate)
+
+    parser_bootstrap = subparsers.add_parser('bootstrap-infra',
+                                             help='Create GENIE-like infra',
+                                             parents=[parent_parser])
     parser_bootstrap.set_defaults(func=bootstrap_infra)
 
-    parser_process = subparsers.add_parser(
-        'process', help='Process files'
-    )
-    parser_process.add_argument(
-        "process", choices=['main']
-    )
-    parser_process.add_argument(
-        "--project_id",
-        help="Synapse Project ID where data is stored.",
-        required=True
-    )
-    parser_process.add_argument(
-        '--center', help='The centers'
-    )
+    parser_process = subparsers.add_parser('process', help='Process files',
+                                           parents=[parent_parser])
+    parser_process.add_argument("process", choices=['main'])
+    parser_process.add_argument('--center', help='The centers')
     parser_process.add_argument(
         "--pemfile", type=str,
         help="Path to PEM file (genie.pem)"
@@ -197,13 +200,6 @@ def build_parser():
     parser_process.add_argument(
         "--debug", action='store_true',
         help="Add debug mode to synapse"
-    )
-    # DEFAULT PARAMS
-    parser_process.add_argument(
-        "--format_registry_packages", type=str, nargs="+",
-        default=["example_registry"],
-        help="Python package name(s) to get valid file formats from "
-             "(default: %(default)s)."
     )
     parser_process.set_defaults(func=process_cli_wrapper)
 
