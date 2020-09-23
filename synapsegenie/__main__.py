@@ -62,7 +62,7 @@ def validate_single_file_cli_wrapper(syn, args):
     format_registry = config.collect_format_types(
         args.format_registry_packages
     )
-    logger.debug("Using {} file formats.".format(format_registry))
+    logger.debug(f"Using {format_registry} file formats.")
     entity_list = [synapseclient.File(name=filepath, path=filepath,
                                       parentId=None)
                    for filepath in args.filepath]
