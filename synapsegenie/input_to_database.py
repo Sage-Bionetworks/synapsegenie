@@ -742,7 +742,7 @@ def center_input_to_database(syn, project_id, center,
 
     center_input_synid = center_mapping_df['inputSynId'][
         center_mapping_df['center'] == center][0]
-    logger.info("Center: " + center)
+    logger.info(f"Center: {center}")
     center_files = get_center_input_files(syn, center_input_synid, center)
 
     # only validate if there are center files
