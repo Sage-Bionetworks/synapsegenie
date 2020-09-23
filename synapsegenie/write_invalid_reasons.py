@@ -6,9 +6,7 @@ import synapseclient
 
 from . import process_functions
 
-logging.basicConfig()
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 def write_file_invalid_reasons(x, syn, error_file):
     ent = syn.get(x['id'],downloadFile=False)

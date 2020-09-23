@@ -6,10 +6,7 @@ from typing import Dict, Type
 from .example_filetype_format import FileTypeFormat
 from .validate import ValidationHelper
 
-
-logging.basicConfig()
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 def make_format_registry_dict(cls_list: list) -> dict:

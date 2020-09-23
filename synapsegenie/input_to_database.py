@@ -13,7 +13,6 @@ import pandas as pd
 
 from . import process_functions, validate
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -134,8 +133,10 @@ def check_existing_file_status(validation_status_table, error_tracker_table, ent
                 to_validate = True
             else:
                 status_str = "{filename} ({id}) FILE STATUS IS: {filestatus}"
-                logger.info(status_str.format(filename=ent.name, id=ent.id,
-                                              filestatus=current_status['status'].values[0]))
+                logger.info(status_str.format(
+                    filename=ent.name, id=ent.id,
+                    filestatus=current_status['status'].values[0])
+                )
 
     return({'status_list': statuses,
             'error_list': errors,
@@ -221,7 +222,7 @@ def validatefile(syn, project_id, entities, validation_status_table, error_track
     filepaths = [entity.path for entity in entities]
     filenames = [entity.name for entity in entities]
 
-    logger.info("VALIDATING {filenames}".format(filenames=", ".join(filenames)))
+    logger.info(f"VALIDATING {', '.join(filenames)}")
 
     file_users = [entities[0].modifiedBy, entities[0].createdBy]
 
@@ -279,7 +280,7 @@ def processfiles(syn, validfiles, center, path_to_genie,
         databaseToSynIdMappingDf: Database to synapse id mapping dataframe
 
     """
-    logger.info("PROCESSING {} FILES: {}".format(center, len(validfiles)))
+    logger.info(f"PROCESSING {center} FILES: {len(validfiles)}")
     center_staging_folder = os.path.join(path_to_genie, center)
     center_staging_synid = center_mapping_df.query(
         "center == '{}'".format(center)).stagingSynId.iloc[0]
@@ -438,8 +439,7 @@ def get_duplicated_files(validation_statusdf):
     if len(clinical_files) > 2:
         duplicated_filesdf = duplicated_filesdf.append(clinical_files)
     duplicated_filesdf.drop_duplicates("id", inplace=True)
-    logger.info("THERE ARE {} DUPLICATED FILES".format(
-        len(duplicated_filesdf)))
+    logger.info(f"THERE ARE {len(duplicated_filesdf)} DUPLICATED FILES")
     duplicated_filesdf['errors'] = DUPLICATED_FILE_ERROR
     return duplicated_filesdf
 
@@ -687,7 +687,7 @@ def validation(syn, project_id, center, center_files,
                                                   user_message_dict)
 
     for user, message_objs in user_message_dict.items():
-        logger.debug("Sending messages to user {user}.".format(user=user))
+        logger.debug(f"Sending messages to user {user}.")
 
         _send_validation_error_email(syn=syn, user=user,
                                      message_objs=message_objs)
@@ -743,7 +743,7 @@ def center_input_to_database(syn, project_id, center,
 
     center_input_synid = center_mapping_df['inputSynId'][
         center_mapping_df['center'] == center][0]
-    logger.info("Center: " + center)
+    logger.info(f"Center: {center}")
     center_files = get_center_input_files(syn, center_input_synid, center)
 
     # only validate if there are center files
