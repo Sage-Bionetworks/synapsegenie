@@ -8,9 +8,11 @@ import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 import tempfile
+import time
 
 import pandas as pd
 import synapseclient
+from synapseclient import Synapse
 
 # try:
 #   from urllib.request import urlopen
