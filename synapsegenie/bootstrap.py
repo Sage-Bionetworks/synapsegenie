@@ -251,6 +251,8 @@ def main(syn, project_id=None, format_registry=['example_registry']):
 
         file_type_schema = synapseclient.Schema(name=file_type,
                                                 parent=project)
+        # The DCC will have to set the schema and primary key
+        # after this is created.
         file_type_schema.annotations.primaryKey = default_primary_key
         file_type_schema = syn.store(file_type_schema)
 
