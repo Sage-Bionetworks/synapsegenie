@@ -2,5 +2,5 @@
 import logging
 from .__version__ import __version__
 
-logging.basicConfig(level=logging.INFO, style='{')
-logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+logging.getLogger(__name__)

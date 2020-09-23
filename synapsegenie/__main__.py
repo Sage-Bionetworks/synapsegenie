@@ -12,7 +12,7 @@ from synapsegenie import (bootstrap, config, input_to_database,
 from .__version__ import __version__
 
 
-logger = logging.getLogger('genie_cli')
+logger = logging.getLogger(__name__)
 
 
 def synapse_login(username=None, password=None):
