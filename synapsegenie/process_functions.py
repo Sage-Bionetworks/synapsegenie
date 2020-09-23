@@ -1,16 +1,15 @@
+"""Processing functions"""
 import ast
-from Crypto.PublicKey import RSA
-import datetime
-import json
 import logging
 import os
-import requests
-from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
 import tempfile
 import time
 
+from Crypto.PublicKey import RSA
 import pandas as pd
+import requests
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 import synapseclient
 from synapseclient import Synapse
 
