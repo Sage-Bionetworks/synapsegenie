@@ -36,7 +36,8 @@ def synapse_login(username=None, password=None):
 
 def bootstrap_infra(syn, args):
     """Create GENIE-like infrastructure"""
-    bootstrap.main(syn)
+    bootstrap.main(syn, project_id=args.project_id,
+                   format_registry=args.format_registry_packages)
 
 
 def validate_single_file_cli_wrapper(syn, args):

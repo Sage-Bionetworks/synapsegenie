@@ -129,7 +129,7 @@ def create_error_tracking_table(syn, parent):
                          parent=parent)
 
 
-def main(syn, project_id=None, format_registry=None):
+def main(syn, project_id=None, format_registry=['example_registry']):
     # TODO: add PRIMARY_KEY annotation to each of the tables
     # Basic setup of the project
     project_name = "Testing Synapse Genie"
@@ -236,7 +236,6 @@ def main(syn, project_id=None, format_registry=None):
     # The mapping between the file type and the folder or table have a consistent naming. 
     # The key ('Database' value) is {file_type}_folder or {file_type}_table.
     # Determine which file formats are going to be used.
-    format_registry = config.collect_format_types(['example_registry'])
     format_registry = config.collect_format_types(format_registry)
 
     for file_type, obj in format_registry.items():
@@ -255,9 +254,6 @@ def main(syn, project_id=None, format_registry=None):
                                       Id=file_type_schema.id))
 
     # Add the folders and tables created to the mapping table.
-    # db_map_tbl = synapseclient.Table(schema=db_map_schema,
-    #                                  values=pandas.DataFrame(output_folder_map))
-    # db_map_tbl = syn.store(db_map_tbl)
     dbmap_df = dbmap_df.append(pandas.DataFrame(output_folder_map))
     existing_dbmap = syn.tableQuery(f"select * from {db_map_schema.id}")
     existing_dbmapdf = existing_dbmap.asDataFrame()
