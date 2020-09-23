@@ -1,6 +1,6 @@
 """Bootstrap the components of a project to be used with the GENIE framework.
 """
-from typing import List, Union
+from typing import List
 import random
 import tempfile
 
@@ -8,7 +8,7 @@ import synapseclient
 from synapseclient import Schema, Synapse
 import pandas
 
-from . import config
+from . import config, process_functions
 
 
 def _create_table(syn: Synapse, name: str, col_config: List[dict],
@@ -66,13 +66,76 @@ def create_status_table(syn, parent):
                          parent=parent)
 
 
-def main(syn):
+def create_center_map_table(syn, parent):
+    """Set up the table that maps the center abbreviation to the folder where
+    their data is uploaded. This is used by the GENIE framework to find the
+    files to validate for a center.
+    """
+    center_map_table_defs = [
+        {'name': 'name',
+         'columnType': 'STRING',
+         'maximumSize': 250},
+        {'name': 'center',
+         'columnType': 'STRING',
+         'maximumSize': 50},
+        {'name': 'inputSynId',
+         'columnType': 'ENTITYID'},
+        # {'name': 'stagingSynId',
+        #  'columnType': 'ENTITYID'},
+        {'name': 'release',
+         'defaultValue': 'false',
+         'columnType': 'BOOLEAN'}
+    ]
+    return _create_table(syn, name="Center Table",
+                         col_config=center_map_table_defs,
+                         parent=parent)
 
+
+def create_db_mapping_table(syn, parent):
+    db_map_col_defs = [
+        {'name': 'Database',
+         'columnType': 'STRING',
+         'maximumSize': 50},
+        {'name': 'Id',
+         'columnType': 'ENTITYID'}
+    ]
+    return _create_table(syn, name="DB Mapping Table",
+                         col_config=db_map_col_defs,
+                         parent=parent)
+
+
+def create_error_tracking_table(syn, parent):
+    error_col_defs = [
+        {'name': 'id',
+         'columnType': 'ENTITYID'},
+        {'name': 'center',
+         'columnType': 'STRING',
+         'maximumSize': 50,
+         'facetType': 'enumeration'},
+        {'name': 'errors',
+         'columnType': 'LARGETEXT'},
+        {'name': 'name',
+         'columnType': 'STRING',
+         'maximumSize': 500},
+        # {'name': 'versionNumber',
+        #  'columnType': 'STRING',
+        #  'maximumSize': 50},
+        {'name': 'fileType',
+         'columnType': 'STRING',
+         'maximumSize': 50}
+    ]
+    return _create_table(syn, name="Error Table",
+                         col_config=error_col_defs,
+                         parent=parent)
+
+
+def main(syn, project_id=None, format_registry=None):
+    # TODO: add PRIMARY_KEY annotation to each of the tables
     # Basic setup of the project
     project_name = "Testing Synapse Genie"
 
     # Determine the short and long names of the centers.
-    center_abbreviations = ['AAA', 'BBB', 'CCC']
+    center_abbreviations = ['AAA', 'BBB', 'DDD']
     center_names = center_abbreviations
 
     # Create the project
@@ -101,15 +164,15 @@ def main(syn):
     # Make some fake data that only contains basic text to check
     # for validation.
 
-    n_files = 5 # number of files per center to create
+    n_files = 2 # number of files per center to create
 
     for folder in center_folders:
-        for idx in range(n_files):
+        for _ in range(n_files):
             tmp = tempfile.NamedTemporaryFile(prefix=f'TEST-{folder.name}',
                                               suffix='.txt')
-            with open(tmp.name, mode='w') as fh:
-                fh.write(random.choice(['ERROR', 'VALID', 'NOPE']))
-            synfile = syn.store(synapseclient.File(tmp.name, parent=folder))
+            with open(tmp.name, mode='w') as file_h:
+                file_h.write(random.choice(['ERROR', 'VALID', 'NOPE']))
+            syn.store(synapseclient.File(tmp.name, parent=folder))
 
     # Set up the table that holds the validation status of all submitted files.
     status_schema = create_status_table(syn, project)
@@ -117,105 +180,41 @@ def main(syn):
     # Set up the table that maps the center abbreviation to the folder where
     # their data is uploaded. This is used by the GENIE framework to find the
     # files to validate for a center.
-    center_map_table_defs = [
-        {'name': 'name',
-         'columnType': 'STRING',
-         'maximumSize': 250},
-        {'name': 'center',
-         'columnType': 'STRING',
-         'maximumSize': 50},
-        {'name': 'inputSynId',
-         'columnType': 'ENTITYID'},
-        # {'name': 'stagingSynId',
-        #  'columnType': 'ENTITYID'},
-        {'name': 'release',
-         'defaultValue': 'false',
-         'columnType': 'BOOLEAN'}
-        # {'id': '68438',
-        #  'name': 'mutationInCisFilter',
-        #  'defaultValue': 'true',
-        #  'columnType': 'BOOLEAN',
-        #  'concreteType': 'org.sagebionetworks.repo.model.table.ColumnModel'}
-    ]
-
-    center_map_cols = [synapseclient.Column(**col)
-                       for col in center_map_table_defs]
-
-    center_schema = synapseclient.Schema(name='Center Table',
-                                         columns=center_map_cols,
-                                         parent=project)
-    center_schema = syn.store(center_schema)
+    center_schema = create_center_map_table(syn, project)
 
     # Add the center folders created above to this table.
     center_folder_ids = [folder.id for folder in center_folders]
     center_df = pandas.DataFrame(dict(name=center_names,
-                                      center=center_abbreviations, 
+                                      center=center_abbreviations,
                                       inputSynId=center_folder_ids))
-
-    tbl = synapseclient.Table(schema=center_schema, values=center_df)
-    tbl = syn.store(tbl)
+    center_df['release'] = True
+    existing_center = syn.tableQuery(f"select * from {center_schema.id}")
+    existing_centerdf = existing_center.asDataFrame()
+    process_functions.updateDatabase(syn, existing_centerdf, center_df,
+                                     center_schema.id, ["center"],
+                                     to_delete=True)
+    # TODO: Remove centers that aren't part of the list
 
     # Create a table that stores the error logs for each submitted file.
-    error_col_defs = [
-        {'name': 'id',
-         'columnType': 'ENTITYID'},
-        {'name': 'center',
-         'columnType': 'STRING',
-         'maximumSize': 50,
-         'facetType': 'enumeration'},
-        {'name': 'errors',
-         'columnType': 'LARGETEXT'},
-        {'name': 'name',
-         'columnType': 'STRING',
-         'maximumSize': 500},
-        # {'name': 'versionNumber',
-        #  'columnType': 'STRING',
-        #  'maximumSize': 50},
-        {'name': 'fileType',
-         'columnType': 'STRING',
-         'maximumSize': 50}
-    ]
-
-    error_map_cols = [synapseclient.Column(**col) for col in error_col_defs]
-    error_schema = synapseclient.Schema(name='Error Table',
-                                        columns=error_map_cols,
-                                        parent=project)
-    error_schema = syn.store(error_schema)
+    error_schema = create_error_tracking_table(syn, project)
 
     # Create a table that maps the various database tables to a short name.
     # This table is used in many GENIE functions to find the correct table to update
     # or get the state of something from.
-
-
-
-    db_map_col_defs = [
-        {'name': 'Database',
-         'columnType': 'STRING',
-         'maximumSize': 50},
-        {'name': 'Id',
-         'columnType': 'ENTITYID'}
-    ]
-
-    db_map_cols = [synapseclient.Column(**col) for col in db_map_col_defs]
-    db_map_schema = synapseclient.Schema(name='DB Mapping Table',
-                                         columns=db_map_cols, parent=project)
-    db_map_schema = syn.store(db_map_schema)
+    db_map_schema = create_db_mapping_table(syn, project)
 
     # Add dbMapping annotation
-    project.annotations.dbMapping = db_map_schema.tableId
+    project.annotations.dbMapping = db_map_schema.id
     project = syn.store(project)
     # Add the tables we already created to the mapping table.
     dbmap_df = pandas.DataFrame(
         dict(Database=['centerMapping', 'validationStatus', 'errorTracker',
-                       'dbMapping', 'logs'], 
+                       'dbMapping', 'logs'],
              Id=[center_schema.id, status_schema.id, error_schema.id,
                  db_map_schema.id, logs_folder.id])
     )
 
-    db_map_tbl = synapseclient.Table(schema=db_map_schema, values=dbmap_df)
-    db_map_tbl = syn.store(db_map_tbl)
-
-    # Make a top level folder for output. Some processing for 
+    # Make a top level folder for output. Some processing for
     # file types copy a file from one place to another.
     output_folder = synapseclient.Folder(name='Output', parent=project)
     output_folder = syn.store(output_folder)
@@ -238,6 +237,7 @@ def main(syn):
     # The key ('Database' value) is {file_type}_folder or {file_type}_table.
     # Determine which file formats are going to be used.
     format_registry = config.collect_format_types(['example_registry'])
+    format_registry = config.collect_format_types(format_registry)
 
     for file_type, obj in format_registry.items():
         file_type_folder = synapseclient.Folder(name=file_type,
@@ -255,6 +255,12 @@ def main(syn):
                                       Id=file_type_schema.id))
 
     # Add the folders and tables created to the mapping table.
-    db_map_tbl = synapseclient.Table(schema=db_map_schema,
-                                     values=pandas.DataFrame(output_folder_map))
-    db_map_tbl = syn.store(db_map_tbl)
+    # db_map_tbl = synapseclient.Table(schema=db_map_schema,
+    #                                  values=pandas.DataFrame(output_folder_map))
+    # db_map_tbl = syn.store(db_map_tbl)
+    dbmap_df = dbmap_df.append(pandas.DataFrame(output_folder_map))
+    existing_dbmap = syn.tableQuery(f"select * from {db_map_schema.id}")
+    existing_dbmapdf = existing_dbmap.asDataFrame()
+    process_functions.updateDatabase(syn, existing_dbmapdf, dbmap_df,
+                                     db_map_schema.id, ["Database"],
+                                     to_delete=True)
