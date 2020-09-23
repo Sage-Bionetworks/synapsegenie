@@ -174,7 +174,8 @@ def main(syn, project_id=None, format_registry=['example_registry']):
                 file_h.write(random.choice(['ERROR', 'VALID', 'NOPE']))
             syn.store(synapseclient.File(tmp.name, parent=folder))
 
-    # Set up the table that holds the validation status of all submitted files.
+    # Set up the table that holds the validation status of all submitted
+    # files.
     status_schema = create_status_table(syn, project)
 
     # Set up the table that maps the center abbreviation to the folder where
@@ -199,8 +200,8 @@ def main(syn, project_id=None, format_registry=['example_registry']):
     error_schema = create_error_tracking_table(syn, project)
 
     # Create a table that maps the various database tables to a short name.
-    # This table is used in many GENIE functions to find the correct table to update
-    # or get the state of something from.
+    # This table is used in many GENIE functions to find the correct table
+    # to update or get the state of something from.
     db_map_schema = create_db_mapping_table(syn, project)
 
     # Add dbMapping annotation
@@ -230,10 +231,13 @@ def main(syn, project_id=None, format_registry=['example_registry']):
 
     default_primary_key = 'PRIMARY_KEY'
 
-    # For each file type format in the format registry, create an output folder and a table.
-    # Some GENIE file types copy a file to a new place, and some update a table. Having both
-    # means that both of these operations will be available at the beginning.
-    # The mapping between the file type and the folder or table have a consistent naming. 
+    # For each file type format in the format registry, create an output 
+    # folder and a table.
+    # Some GENIE file types copy a file to a new place, and some update a
+    # table. Having both means that both of these operations will be available
+    # at the beginning.
+    # The mapping between the file type and the folder or table have a
+    # consistent naming.
     # The key ('Database' value) is {file_type}_folder or {file_type}_table.
     # Determine which file formats are going to be used.
     format_registry = config.collect_format_types(format_registry)
@@ -244,13 +248,13 @@ def main(syn, project_id=None, format_registry=['example_registry']):
         file_type_folder = syn.store(file_type_folder)
         output_folder_map.append(dict(Database=f"{file_type}_folder",
                                       Id=file_type_folder.id))
-        
+
         file_type_schema = synapseclient.Schema(name=file_type,
                                                 parent=project)
         file_type_schema.annotations.primaryKey = default_primary_key
         file_type_schema = syn.store(file_type_schema)
 
-        output_folder_map.append(dict(Database=f"{file_type}_table", 
+        output_folder_map.append(dict(Database=f"{file_type}_table",
                                       Id=file_type_schema.id))
 
     # Add the folders and tables created to the mapping table.
