@@ -8,7 +8,7 @@ import synapseclient
 from synapseclient import Schema, Synapse
 import pandas
 
-from . import config
+from . import config, process_functions
 
 
 def _create_table(syn: Synapse, name: str, col_config: List[dict],
@@ -26,8 +26,8 @@ def _create_table(syn: Synapse, name: str, col_config: List[dict],
 
     """
     cols = [synapseclient.Column(**col) for col in col_config]
-    schema = synapseclient.Schema(name=name, columns=cols, parent=parent)
-    schema = syn.store(schema)
+    schema = process_functions._create_schema(syn, table_name=name,
+                                              parentid=parent, columns=cols)
     return schema
 
 

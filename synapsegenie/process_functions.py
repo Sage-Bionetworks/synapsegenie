@@ -192,27 +192,12 @@ def removePandasDfFloat(df, header=True):
     return(text)
 
 
-def removeFloat(df):
-    '''
-    Need to remove this function
-    as it calls another function
-    '''
-    # text = df.to_csv(sep="\t",index=False)
-    # text = text.replace(".0\t","\t")
-    # text = text.replace(".0\n","\n")
-    text = removePandasDfFloat(df)
-    return(text)
-
-
-def storeFile(
-        syn, fileName, parentId,
-        center, fileFormat, dataSubType,
-        platform=None,
-        cBioFileFormat=None,
-        used=None):
-    '''
-    # Storing Files along with annotations
-    '''
+def storeFile(syn, fileName, parentId,
+              center, fileFormat, dataSubType,
+              platform=None,
+              cBioFileFormat=None,
+              used=None):
+    """Storing Files along with annotations"""
     logger.info("STORING FILES")
     fileEnt = synapseclient.File(fileName, parent=parentId)
     fileEnt.center = center
@@ -487,11 +472,9 @@ def updateDatabase(syn, database, new_dataset, database_synid,
         # Must write out the headers in case there are no appends or updates
         updatefile.write(",".join(col_order) + "\n")
         if not allupdates.empty:
-            '''
-            This is done because of pandas typing.
-            An integer column with one NA/blank value
-            will be cast as a double.
-            '''
+            # This is done because of pandas typing.
+            # An integer column with one NA/blank value
+            # will be cast as a double.
             updatefile.write(
                 allupdates[col_order]
                 .to_csv(index=False, header=None)
@@ -671,12 +654,14 @@ def synLogin(pemfile_path, debug=False):
 
 def _create_schema(syn, table_name, parentid, columns=None, annotations=None):
     """Creates Table Schema
+
     Args:
         syn: Synapse object
         table_name: Name of table
         parentid: Project synapse id
         columns: Columns of Table
         annotations: Dictionary of annotations to add
+
     Returns:
         Schema
     """
