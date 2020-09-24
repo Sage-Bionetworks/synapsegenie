@@ -117,26 +117,7 @@ def get_syntabledf(syn, query_string):
     '''
     table = syn.tableQuery(query_string)
     tabledf = table.asDataFrame()
-    return(tabledf)
-
-
-def get_synid_database_mappingdf(syn, project_id):
-    '''
-    Get database to synapse id mapping dataframe
-
-    Args:
-        syn: Synapse object
-        project_id: Synapse Project ID with a 'dbMapping' annotation.
-
-    Returns:
-        database to synapse id mapping dataframe
-    '''
-
-    project = syn.get(project_id)
-    database_mapping_synid = project.annotations['dbMapping'][0]
-    database_map_query = "SELECT * FROM {}".format(database_mapping_synid)
-    mappingdf = get_syntabledf(syn, database_map_query)
-    return mappingdf
+    return tabledf
 
 
 def getDatabaseSynId(syn, tableName, project_id=None, databaseToSynIdMappingDf=None):
@@ -154,8 +135,8 @@ def getDatabaseSynId(syn, tableName, project_id=None, databaseToSynIdMappingDf=N
         str:  Synapse id of wanted database
     '''
     if databaseToSynIdMappingDf is None:
-        databaseToSynIdMappingDf = get_synid_database_mappingdf(syn,
-                                                                project_id=project_id)
+        database_mapping_info = get_dbmapping(syn, project_id=project_id)
+        databaseToSynIdMappingDf = database_mapping_info['df']
 
     synId = lookup_dataframe_value(databaseToSynIdMappingDf, "Id",
                                    'Database == "{}"'.format(tableName))
@@ -750,19 +731,20 @@ def _move_entity(syn, ent, parentid, name=None):
     return moved_ent
 
 
-def get_dbmapping(syn: Synapse, projectid: str) -> dict:
+def get_dbmapping(syn: Synapse, project_id: str) -> dict:
     """Gets database mapping information
     Args:
         syn: Synapse connection
-        projectid: Project id where new data lives
+        project_id: Project id where new data lives
     Returns:
         {'synid': database mapping syn id,
          'df': database mapping pd.DataFrame}
     """
-    project_ent = syn.get(projectid)
+    project_ent = syn.get(project_id)
     dbmapping_synid = project_ent.annotations.get("dbMapping", "")[0]
-    database_mapping = syn.tableQuery(f'select * from {dbmapping_synid}')
-    database_mappingdf = database_mapping.asDataFrame()
+    database_mappingdf = get_syntabledf(
+        syn, f'select * from {dbmapping_synid}'
+    )
     return {'synid': dbmapping_synid,
             'df': database_mappingdf}
 

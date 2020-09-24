@@ -60,8 +60,10 @@ def validate_single_file_cli_wrapper(syn, args):
     # Check parentid argparse
     validate._check_parentid_permission_container(syn, args.parentid)
 
-    databasetosynid_mappingdf = process_functions.get_synid_database_mappingdf(
-        syn, project_id=args.project_id)
+    databasetosynid_json = process_functions.get_dbmapping(
+        syn, project_id=args.project_id
+    )
+    databasetosynid_mappingdf = databasetosynid_json['df']
 
     synid = databasetosynid_mappingdf.query('Database == "centerMapping"').Id
 
