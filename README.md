@@ -1,35 +1,41 @@
 # Synapse Genie
 
-[![Docker Automated](https://img.shields.io/docker/automated/sagebionetworks/genie.svg)](https://hub.docker.com/r/sagebionetworks/genie) ![Docker Build](https://img.shields.io/docker/build/sagebionetworks/genie.svg)
-
-
 ## Introduction
 
-This package can deploy a AACR GENIE like project on Synapse and perform validation and processing of flat files.
+This package can deploy a AACR GENIE like project on Synapse and perform validation and processing of files.
 
-## Dependencies
+## Installation
 
-These are tools or packages you will need, to be able to reproduce these results:
+Dependencies:
 - Python 3.6 or higher
-- Synapse [command-line client](http://python-docs.synapse.org/CommandLineClient.html) (`pip install synapseclient`)
-- Python [pandas](http://pandas.pydata.org/) (`pip install pandas`)
+- [synapseclient](http://python-docs.synapse.org) (`pip install synapseclient`)
+- Python [pandas](http://pandas.pydata.org) (`pip install pandas`)
 
-
-## File Validator
 ```
 pip install synapsegenie
-genie -v
+synapsegenie -v
 ```
 
-This will install all the necessary components for you to run the validator locally on all of your files, including the Synapse client.  Please view the help to see how to run to validator.  
+## Usage
+
+### Creating your own registry
+Please view the [example registry](example_registry) to learn how to utilize `synapsegenie`.  `synapsegenie` allows a user to create a registry package with a list of file formats.  Each of these file format classes should extend `synapsegenie.example_filetype_format.FileTypeFormat`.  Learn more about creating Python packages [here](https://packaging.python.org/tutorials/packaging-projects/).  Once you have installed your registry package, you can now use the `synapsegenie` command line client.
+
+### synapsegenie Synapse project
+A `synapsegenie` Synapse project must exist for you to fully utilize this package.  There is now a command to create this infrastructure in Synapse.
+
 ```
-genie validate -h
-genie validate data_clinical_supp_SAGE.txt SAGE
+synapsegenie bootstrap-infra --format_registry_packages example_registry
 ```
 
-# Development
+### File Validator
+This will install all the necessary components for you to run the validator locally on all of your files, including the Synapse client.  Please view the help to see how to run to validator.
 
-## Versioning
-1. Update the version in [genie/__version__.py](genie/__version__.py) based on semantic versioning. Use the suffix `-dev` for development branch versions.
-2. When releasing, remove the `-dev` from the version.
-3. Add a tag and release named the same as the version.
+```
+synapsegenie validate-single-file -h
+```
+
+
+## Contributing
+
+To learn how to contribute, please read the [contributing guide](CONTRIBUTING.md)
