@@ -412,7 +412,8 @@ def test_create_new_fileformat_table():
                       return_value=update_return) as patch_update,\
          patch.object(process_functions, "_move_entity",
                       return_value=move_entity_return) as patch_move,\
-         patch.object(process_functions.time, "time", return_value=2):
+         patch('synapsegenie.process_functions.date') as mock_datetime:
+        mock_datetime.today.return_value = 2
         new_table = process_functions.create_new_fileformat_table(
             syn, fileformat, new_table_name, project_id, archived_project_id
         )
