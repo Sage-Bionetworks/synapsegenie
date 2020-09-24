@@ -155,11 +155,10 @@ def process(syn, project_id, center=None, pemfile=None,
     )
     # Only write out invalid reasons if the center
     # isnt specified and if only validate
-    if center is None and only_validate:
-        logger.info("WRITING INVALID REASONS TO CENTER STAGING DIRS")
-        write_invalid_reasons.write_invalid_reasons(
-            syn, center_mapping_df, error_tracker_synid
-        )
+    # if center is None and only_validate:
+    #     logger.info("WRITING INVALID REASONS TO CENTER STAGING DIRS")
+    #     write_invalid_reasons.write(syn, center_mapping_df,
+    #                                 error_tracker_synid)
 
 def build_parser():
     """Build CLI parsers"""
