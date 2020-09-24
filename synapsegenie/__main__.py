@@ -2,6 +2,7 @@
 # noqa pylint: disable=line-too-long
 """synapsegenie cli"""
 import argparse
+from datetime import date
 import logging
 
 import synapseclient
@@ -93,16 +94,12 @@ def process(syn, project_id, center=None, pemfile=None,
     """Process files"""
     # Get the Synapse Project where data is stored
     # Should have annotations to find the table lookup
-    project = syn.get(project_id)
-    database_to_synid_mapping_synid = project.annotations.get("dbMapping", "")
-
-    databaseToSynIdMapping = syn.tableQuery(
-        'SELECT * FROM {}'.format(database_to_synid_mapping_synid[0]))
-    databaseToSynIdMappingDf = databaseToSynIdMapping.asDataFrame()
+    db_mapping_info = process_functions.get_dbmapping(syn, project_id)
+    database_mappingdf = db_mapping_info['df']
 
     center_mapping_id = process_functions.getDatabaseSynId(
         syn, "centerMapping",
-        databaseToSynIdMappingDf=databaseToSynIdMappingDf
+        databaseToSynIdMappingDf=database_mappingdf
     )
 
     center_mapping = syn.tableQuery(f'SELECT * FROM {center_mapping_id}')
@@ -128,7 +125,7 @@ def process(syn, project_id, center=None, pemfile=None,
     for process_center in centers:
         input_to_database.center_input_to_database(
             syn, project_id, process_center,
-            only_validate, databaseToSynIdMappingDf,
+            only_validate, database_mappingdf,
             center_mapping_df,
             delete_old=delete_old,
             format_registry=format_registry,
@@ -136,7 +133,7 @@ def process(syn, project_id, center=None, pemfile=None,
         )
 
     error_tracker_synid = process_functions.getDatabaseSynId(
-        syn, "errorTracker", databaseToSynIdMappingDf=databaseToSynIdMappingDf
+        syn, "errorTracker", databaseToSynIdMappingDf=database_mappingdf
     )
     # Only write out invalid reasons if the center
     # isnt specified and if only validate
@@ -145,6 +142,22 @@ def process(syn, project_id, center=None, pemfile=None,
         write_invalid_reasons.write_invalid_reasons(
             syn, center_mapping_df, error_tracker_synid
         )
+
+
+def replace_db_cli_wrapper(syn, args):
+    """Replace existing db with new empty db"""
+    db_mapping_info = process_functions.get_dbmapping(syn, args.project_id)
+    database_mappingdf = db_mapping_info['df']
+    if args.filetype not in database_mappingdf['Database'].tolist():
+        raise ValueError("Must specify existing database type")
+    today = date.today()
+    table_name = f'{args.table_name} - {today}'
+    new_tables = process_functions.create_new_fileformat_table(
+        syn, args.filetype, table_name, args.project_id,
+        args.archive_projectid
+    )
+    print(new_tables['newdb_ent'])
+
 
 def build_parser():
     """Build CLI parsers"""
@@ -237,6 +250,23 @@ def build_parser():
         help="Add debug mode to synapse"
     )
     parser_process.set_defaults(func=process_cli_wrapper)
+
+    parser_replace_db = subparsers.add_parser(
+        'replace-db',
+        help='Replace existing database with new empty database',
+        parents=[parent_parser]
+    )
+    parser_replace_db.add_argument('filetype',
+                                   help='Database type to replace')
+    parser_replace_db.add_argument(
+        'archive_projectid',
+        help='Synapse id of project to archive table'
+    )
+    parser_replace_db.add_argument(
+        'table_name',
+        help='New table name.  Will have todays date appened to it.'
+    )
+    parser_replace_db.set_defaults(func=replace_db_cli_wrapper)
 
     return parser
 
