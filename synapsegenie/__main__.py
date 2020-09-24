@@ -150,9 +150,9 @@ def process(syn, project_id, center=None, pemfile=None,
             validator_cls=validator_cls
         )
 
-    error_tracker_synid = process_functions.getDatabaseSynId(
-        syn, "errorTracker", databaseToSynIdMappingDf=databaseToSynIdMappingDf
-    )
+    # error_tracker_synid = process_functions.getDatabaseSynId(
+    #     syn, "errorTracker", databaseToSynIdMappingDf=databaseToSynIdMappingDf
+    # )
     # Only write out invalid reasons if the center
     # isnt specified and if only validate
     # if center is None and only_validate:
