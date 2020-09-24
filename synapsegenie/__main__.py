@@ -34,6 +34,21 @@ def synapse_login(username=None, password=None):
     return syn
 
 
+def get_file_errors_cli_wrapper(syn, args):
+    """CLI to get invalid reasons"""
+    project = syn.get(args.project_id)
+    db_mapping = syn.tableQuery(f"select * from {project.dbMapping[0]}")
+    db_mappingdf = db_mapping.asDataFrame()
+    error_tracker_synid = db_mappingdf['Id'][
+        db_mappingdf['Database'] == "errorTracker"
+    ][0]
+    center_errors = write_invalid_reasons.get_center_invalid_errors(
+        syn, error_tracker_synid
+    )
+    print(center_errors[args.center])
+
+
+
 def bootstrap_infra(syn, args):
     """Create GENIE-like infrastructure"""
     bootstrap.main(syn)
@@ -135,16 +150,15 @@ def process(syn, project_id, center=None, pemfile=None,
             validator_cls=validator_cls
         )
 
-    error_tracker_synid = process_functions.getDatabaseSynId(
-        syn, "errorTracker", databaseToSynIdMappingDf=databaseToSynIdMappingDf
-    )
+    # error_tracker_synid = process_functions.getDatabaseSynId(
+    #     syn, "errorTracker", databaseToSynIdMappingDf=databaseToSynIdMappingDf
+    # )
     # Only write out invalid reasons if the center
     # isnt specified and if only validate
-    if center is None and only_validate:
-        logger.info("WRITING INVALID REASONS TO CENTER STAGING DIRS")
-        write_invalid_reasons.write_invalid_reasons(
-            syn, center_mapping_df, error_tracker_synid
-        )
+    # if center is None and only_validate:
+    #     logger.info("WRITING INVALID REASONS TO CENTER STAGING DIRS")
+    #     write_invalid_reasons.write(syn, center_mapping_df,
+    #                                 error_tracker_synid)
 
 def build_parser():
     """Build CLI parsers"""
@@ -237,6 +251,15 @@ def build_parser():
         help="Add debug mode to synapse"
     )
     parser_process.set_defaults(func=process_cli_wrapper)
+
+    parser_get_invalid = subparsers.add_parser(
+        'get-file-errors',
+        help='Get the file invalid reasons for a specific center',
+        parents=[parent_parser]
+    )
+    parser_get_invalid.add_argument("center", type=str,
+                                    help='Contributing Centers')
+    parser_get_invalid.set_defaults(func=get_file_errors_cli_wrapper)
 
     return parser
 
