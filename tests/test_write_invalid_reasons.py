@@ -2,10 +2,10 @@
 from unittest import mock
 from unittest.mock import create_autospec, patch
 
-from synapsegenie import write_invalid_reasons
 import pandas as pd
 import synapseclient
 
+from synapsegenie import write_invalid_reasons
 
 SYN = create_autospec(synapseclient.Synapse)
 CENTER_ERRORSDF = pd.DataFrame(
