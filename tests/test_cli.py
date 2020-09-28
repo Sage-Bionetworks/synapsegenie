@@ -35,8 +35,8 @@ def test_perform_validate():
     with patch.object(validate,
                       "_check_parentid_permission_container",
                       return_value=None) as patch_check_parentid,\
-         patch.object(process_functions, "get_synid_database_mappingdf",
-                      return_value=arg.asDataFrame()) as patch_getdb,\
+         patch.object(process_functions, "get_dbmapping",
+                      return_value={"df": arg.asDataFrame()}) as patch_getdb,\
          patch.object(syn, "tableQuery",
                       return_value=arg) as patch_syn_tablequery,\
          patch.object(validate, "_check_center_input") as patch_check_center,\

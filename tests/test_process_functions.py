@@ -291,22 +291,18 @@ class argparser:
         return(databasetosynid_mappingdf)
 
 
-def test_get_synid_database_mappingdf():
-    '''
-    Test getting database mapping config
-    no flags
-    staging flag
-    test flag
-    '''
+def test_get_dbmapping():
+    """Test getting database mapping config"""
     arg = argparser()
     with patch.object(syn, "get", return_value=ENTITY), \
          patch.object(process_functions, "get_syntabledf",
                       return_value=arg.asDataFrame()) as patch_gettabledf:
-        df = process_functions.get_synid_database_mappingdf(
-            syn, project_id=None)
+        info = process_functions.get_dbmapping(syn, project_id=None)
         patch_gettabledf.assert_called_once_with(
-            syn, "SELECT * FROM {}".format(ENTITY.dbMapping[0]))
-        assert df.equals(arg.asDataFrame())
+            syn, "select * from {}".format(ENTITY.dbMapping[0])
+        )
+        assert info['df'].equals(arg.asDataFrame())
+        assert info['synid'] == ENTITY.dbMapping[0]
 
 
 def test_get_syntabledf():

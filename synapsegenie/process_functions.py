@@ -117,26 +117,7 @@ def get_syntabledf(syn, query_string):
     '''
     table = syn.tableQuery(query_string)
     tabledf = table.asDataFrame()
-    return(tabledf)
-
-
-def get_synid_database_mappingdf(syn, project_id):
-    '''
-    Get database to synapse id mapping dataframe
-
-    Args:
-        syn: Synapse object
-        project_id: Synapse Project ID with a 'dbMapping' annotation.
-
-    Returns:
-        database to synapse id mapping dataframe
-    '''
-
-    project = syn.get(project_id)
-    database_mapping_synid = project.annotations['dbMapping'][0]
-    database_map_query = "SELECT * FROM {}".format(database_mapping_synid)
-    mappingdf = get_syntabledf(syn, database_map_query)
-    return mappingdf
+    return tabledf
 
 
 def getDatabaseSynId(syn, tableName, project_id=None, databaseToSynIdMappingDf=None):
@@ -154,8 +135,8 @@ def getDatabaseSynId(syn, tableName, project_id=None, databaseToSynIdMappingDf=N
         str:  Synapse id of wanted database
     '''
     if databaseToSynIdMappingDf is None:
-        databaseToSynIdMappingDf = get_synid_database_mappingdf(syn,
-                                                                project_id=project_id)
+        database_mapping_info = get_dbmapping(syn, project_id=project_id)
+        databaseToSynIdMappingDf = database_mapping_info['df']
 
     synId = lookup_dataframe_value(databaseToSynIdMappingDf, "Id",
                                    'Database == "{}"'.format(tableName))
@@ -211,27 +192,12 @@ def removePandasDfFloat(df, header=True):
     return(text)
 
 
-def removeFloat(df):
-    '''
-    Need to remove this function
-    as it calls another function
-    '''
-    # text = df.to_csv(sep="\t",index=False)
-    # text = text.replace(".0\t","\t")
-    # text = text.replace(".0\n","\n")
-    text = removePandasDfFloat(df)
-    return(text)
-
-
-def storeFile(
-        syn, fileName, parentId,
-        center, fileFormat, dataSubType,
-        platform=None,
-        cBioFileFormat=None,
-        used=None):
-    '''
-    # Storing Files along with annotations
-    '''
+def storeFile(syn, fileName, parentId,
+              center, fileFormat, dataSubType,
+              platform=None,
+              cBioFileFormat=None,
+              used=None):
+    """Storing Files along with annotations"""
     logger.info("STORING FILES")
     fileEnt = synapseclient.File(fileName, parent=parentId)
     fileEnt.center = center
@@ -506,11 +472,9 @@ def updateDatabase(syn, database, new_dataset, database_synid,
         # Must write out the headers in case there are no appends or updates
         updatefile.write(",".join(col_order) + "\n")
         if not allupdates.empty:
-            '''
-            This is done because of pandas typing.
-            An integer column with one NA/blank value
-            will be cast as a double.
-            '''
+            # This is done because of pandas typing.
+            # An integer column with one NA/blank value
+            # will be cast as a double.
             updatefile.write(
                 allupdates[col_order]
                 .to_csv(index=False, header=None)
@@ -690,12 +654,14 @@ def synLogin(pemfile_path, debug=False):
 
 def _create_schema(syn, table_name, parentid, columns=None, annotations=None):
     """Creates Table Schema
+
     Args:
         syn: Synapse object
         table_name: Name of table
         parentid: Project synapse id
         columns: Columns of Table
         annotations: Dictionary of annotations to add
+
     Returns:
         Schema
     """
@@ -750,19 +716,20 @@ def _move_entity(syn, ent, parentid, name=None):
     return moved_ent
 
 
-def get_dbmapping(syn: Synapse, projectid: str) -> dict:
+def get_dbmapping(syn: Synapse, project_id: str) -> dict:
     """Gets database mapping information
     Args:
         syn: Synapse connection
-        projectid: Project id where new data lives
+        project_id: Project id where new data lives
     Returns:
         {'synid': database mapping syn id,
          'df': database mapping pd.DataFrame}
     """
-    project_ent = syn.get(projectid)
+    project_ent = syn.get(project_id)
     dbmapping_synid = project_ent.annotations.get("dbMapping", "")[0]
-    database_mapping = syn.tableQuery(f'select * from {dbmapping_synid}')
-    database_mappingdf = database_mapping.asDataFrame()
+    database_mappingdf = get_syntabledf(
+        syn, f'select * from {dbmapping_synid}'
+    )
     return {'synid': dbmapping_synid,
             'df': database_mappingdf}
 
