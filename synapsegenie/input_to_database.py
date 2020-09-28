@@ -3,7 +3,7 @@ from collections import defaultdict
 import datetime
 import logging
 import os
-import time
+import shutil
 from typing import List
 
 import synapseclient
@@ -680,7 +680,8 @@ def center_input_to_database(syn, project_id, center,
         os.makedirs(os.path.join(path_to_genie, center, "staging"))
 
     if delete_old:
-        process_functions.rmFiles(os.path.join(path_to_genie, center))
+        shutil.rmtree(os.path.join(path_to_genie, center),
+                      ignore_errors=True)
 
     center_input_synid = center_mapping_df['inputSynId'][
         center_mapping_df['center'] == center][0]

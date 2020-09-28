@@ -143,21 +143,6 @@ def getDatabaseSynId(syn, tableName, project_id=None, databaseToSynIdMappingDf=N
     return(synId)
 
 
-def rmFiles(folderPath, recursive=True):
-    '''
-    Convenience function to remove all files in dir
-
-    Args:
-        folderPath: Path to folder
-        recursive:  Removes all files recursively
-    '''
-    for dirPath, dirNames, filePaths in os.walk(folderPath):
-        for filePath in filePaths:
-            os.unlink(os.path.join(dirPath, filePath))
-        if not recursive:
-            break
-
-
 def removeStringFloat(string):
     '''
     remove string float in tsv file
