@@ -642,7 +642,7 @@ def validation(syn, project_id, center, center_files,
     )
 
     valid_filesdf = validation_statusdf.query('status == "VALIDATED"')
-    return(valid_filesdf[['id', 'path', 'fileType', 'name']])
+    return valid_filesdf[['id', 'path', 'fileType', 'name']]
 
 
 def center_input_to_database(syn, project_id, center,
@@ -656,22 +656,23 @@ def center_input_to_database(syn, project_id, center,
         log_path = os.path.join(process_functions.SCRIPT_DIR,
                                 f"{center}_log.txt")
 
-    logFormatter = logging.Formatter(
-        "%(asctime)s [%(name)s][%(levelname)s] %(message)s")
-    fileHandler = logging.FileHandler(log_path, mode='w')
-    fileHandler.setFormatter(logFormatter)
-    logger.addHandler(fileHandler)
+    log_formatter = logging.Formatter(
+        "%(asctime)s [%(name)s][%(levelname)s] %(message)s"
+    )
+    file_handler = logging.FileHandler(log_path, mode='w')
+    file_handler.setFormatter(log_formatter)
+    logger.addHandler(file_handler)
 
     # ----------------------------------------
     # Start input to staging process
     # ----------------------------------------
-    '''
+
     # path_to_genie = os.path.realpath(os.path.join(
     #    process_functions.SCRIPT_DIR, "../"))
-    Make the synapsecache dir the genie input folder for now
-    The main reason for this is because the .synaspecache dir
-    is mounted by batch
-    '''
+    # Make the synapsecache dir the genie input folder for now
+    # The main reason for this is because the .synaspecache dir
+    # is mounted by batch
+
     path_to_genie = os.path.expanduser("~/.synapseCache")
     # Create input and staging folders
     if not os.path.exists(os.path.join(path_to_genie, center, "input")):
@@ -684,7 +685,7 @@ def center_input_to_database(syn, project_id, center,
         # So must recreate the directory
         shutil.rmtree(os.path.join(path_to_genie, center),
                       ignore_errors=True)
-        os.mkdir(os.path.join(path_to_genie, center))
+        os.makedirs(os.path.join(path_to_genie, center))
 
     center_input_synid = center_mapping_df['inputSynId'][
         center_mapping_df['center'] == center][0]
@@ -747,14 +748,15 @@ def center_input_to_database(syn, project_id, center,
         # toRetract.retract(syn, project_id=project_id)
 
     else:
-        messageOut = \
+        message_out = \
             "{} does not have any valid files" if not only_validate \
             else "ONLY VALIDATION OCCURED FOR {}"
-        logger.info(messageOut.format(center))
+        logger.info(message_out.format(center))
 
     # Store log file
     log_folder_synid = process_functions.getDatabaseSynId(
-        syn, "logs", databaseToSynIdMappingDf=database_to_synid_mappingdf)
+        syn, "logs", databaseToSynIdMappingDf=database_to_synid_mappingdf
+    )
     syn.store(synapseclient.File(log_path, parentId=log_folder_synid))
     os.remove(log_path)
     logger.info("ALL PROCESSES COMPLETE")
