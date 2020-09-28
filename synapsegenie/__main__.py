@@ -52,7 +52,17 @@ def get_file_errors_cli_wrapper(syn, args):
 
 def bootstrap_infra(syn, args):
     """Create GENIE-like infrastructure"""
-    bootstrap.main(syn)
+    # Basic setup of the project
+    if args.project_name:
+        # Create the project
+        project = synapseclient.Project(args.project_name)
+        project = syn.store(project)
+    else:
+        project = syn.get(args.project_id)
+
+    bootstrap.main(syn, project=project,
+                   format_registry=args.format_registry_packages,
+                   centers=args.centers)
 
 
 def validate_single_file_cli_wrapper(syn, args):
@@ -242,8 +252,31 @@ def build_parser():
     parser_validate.set_defaults(func=validate_single_file_cli_wrapper)
 
     parser_bootstrap = subparsers.add_parser('bootstrap-infra',
-                                             help='Create GENIE-like infra',
-                                             parents=[parent_parser])
+                                             help='Create GENIE-like infra')
+    parser_bootstrap.add_argument(
+        "--format_registry_packages", type=str, nargs="+",
+        default=["example_registry"],
+        help="Python package name(s) to get valid file formats from "
+             "(default: %(default)s)."
+    )
+
+    bootstrap_group = parser_bootstrap.add_mutually_exclusive_group(required=True)
+
+    bootstrap_group.add_argument(
+        "--project_name", type=str,
+        help="If you don't have an existing Synapse Project and would like "
+             "to create one, please specify a name."
+    )
+
+    bootstrap_group.add_argument(
+        "--project_id", type=str,
+        help="If you already have a synapsegenie compatible Synapse Project, "
+             "please specify its Synapse Project ID."
+    )
+
+    parser_bootstrap.add_argument('--centers', help='The centers to create',
+                                  nargs="+", required=True)
+
     parser_bootstrap.set_defaults(func=bootstrap_infra)
 
     parser_process = subparsers.add_parser('process', help='Process files',
