@@ -633,7 +633,7 @@ def synLogin(pemfile_path, debug=False):
         genie_pass = get_password(pemfile_path)
         syn = synapseclient.Synapse(debug=debug)
         syn.login(os.environ['GENIE_USER'], genie_pass)
-    return(syn)
+    return syn
 
 
 def _create_schema(syn, table_name, parentid, columns=None, annotations=None):
@@ -676,8 +676,7 @@ def _update_database_mapping(syn, database_synid_mappingdf,
     # Only update the one row
     to_update_row = database_synid_mappingdf[fileformat_ind]
 
-    updated_table = syn.store(synapseclient.Table(database_mapping_synid,
-                                                  to_update_row))
+    syn.store(synapseclient.Table(database_mapping_synid, to_update_row))
     return database_synid_mappingdf
 
 
