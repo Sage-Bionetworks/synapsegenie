@@ -194,10 +194,10 @@ def store_file(syn, filepath, parentid, name=None, annotations={},
 
     """
     logger.info("STORING FILES")
-    file_ent = synapseclient.File(filepath, parent=parentid)
+    file_ent = synapseclient.File(filepath, parent=parentid, name=name)
     file_ent.annotations.update(annotations)
     file_ent = syn.store(file_ent, used=used, executed=executed)
-    return ent
+    return file_ent
 
 
 def _check_valid_df(df, col):
