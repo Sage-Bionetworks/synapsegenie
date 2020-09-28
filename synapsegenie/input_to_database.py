@@ -680,8 +680,11 @@ def center_input_to_database(syn, project_id, center,
         os.makedirs(os.path.join(path_to_genie, center, "staging"))
 
     if delete_old:
+        # This command removes the directory and all the files in it
+        # So must recreate the directory
         shutil.rmtree(os.path.join(path_to_genie, center),
                       ignore_errors=True)
+        os.makedirs(os.path.join(path_to_genie, center))
 
     center_input_synid = center_mapping_df['inputSynId'][
         center_mapping_df['center'] == center][0]
