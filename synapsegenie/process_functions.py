@@ -174,33 +174,30 @@ def removePandasDfFloat(df, header=True):
         text = df.to_csv(sep="\t", index=False, header=None)
 
     text = removeStringFloat(text)
-    return(text)
+    return text
 
 
-def storeFile(syn, fileName, parentId,
-              center, fileFormat, dataSubType,
-              platform=None,
-              cBioFileFormat=None,
-              used=None):
-    """Storing Files along with annotations"""
+def store_file(syn, filepath, parentid, name=None, annotations={},
+               used=None, executed=None):
+    """Storing Files along with annotations
+
+    Args:
+        filepath: Path to file
+        parentid: Project or Folder Synapse id
+        name: Name of entity. Defaults to filename
+        annotations:  Synapse annotations to add
+        used: List of used entitys or links.
+        executed:  List of scripts executed
+
+    Returns:
+        File Entity
+
+    """
     logger.info("STORING FILES")
-    fileEnt = synapseclient.File(fileName, parent=parentId)
-    fileEnt.center = center
-    fileEnt.species = "Human"
-    fileEnt.consortium = 'GENIE'
-    fileEnt.dataType = "genomicVariants"
-    fileEnt.fundingAgency = "AACR"
-    fileEnt.assay = 'targetGeneSeq'
-    fileEnt.fileFormat = fileFormat
-    fileEnt.dataSubType = dataSubType
-    fileEnt.fileStage = "staging"
-    fileEnt.platform = platform
-    if platform is not None:
-        fileEnt.platform = platform
-    if cBioFileFormat is not None:
-        fileEnt.cBioFileFormat = cBioFileFormat
-    ent = syn.store(fileEnt, used=used)
-    return(ent)
+    file_ent = synapseclient.File(filepath, parent=parentid)
+    file_ent.annotations.update(annotations)
+    file_ent = syn.store(file_ent, used=used, executed=executed)
+    return ent
 
 
 def _check_valid_df(df, col):
@@ -214,8 +211,7 @@ def _check_valid_df(df, col):
     if not isinstance(df, pd.DataFrame):
         raise ValueError("Must pass in pandas dataframe")
     if df.get(col) is None:
-        raise ValueError("'{}' column must exist in dataframe".format(
-            col))
+        raise ValueError(f"'{col}' column must exist in dataframe")
 
 
 def _get_left_diff_df(left, right, checkby):
@@ -234,7 +230,7 @@ def _get_left_diff_df(left, right, checkby):
     _check_valid_df(left, checkby)
     _check_valid_df(right, checkby)
     diffdf = left[~left[checkby].isin(right[checkby])]
-    return(diffdf)
+    return diffdf
 
 
 def _get_left_union_df(left, right, checkby):
@@ -253,7 +249,7 @@ def _get_left_union_df(left, right, checkby):
     _check_valid_df(left, checkby)
     _check_valid_df(right, checkby)
     uniondf = left[left[checkby].isin(right[checkby])]
-    return(uniondf)
+    return uniondf
 
 
 def _append_rows(new_datasetdf, databasedf, checkby):

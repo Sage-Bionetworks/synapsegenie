@@ -21,29 +21,10 @@ DUPLICATED_FILE_ERROR = (
     "and the entire dataset should be uploaded."
 )
 
-'''
-TODO:
-Could potentially get all the inforamation of the file entity right here
-To avoid the syn.get rest call later which doesn't actually download the file
-'''
 
-# def rename_file(ent):
-#     '''
-#     Gets file from synapse and renames the file if necessary.
-
-#     Adds the expected name as an annotation to a Synapse File object.
-
-#     Args:
-#         synid : Synapse id or entity
-
-#     Returns:
-#         entity with annotation set for path of corrected file
-#     '''
-#     dirpath = os.path.dirname(ent.path)
-#     expectedpath = os.path.join(dirpath, ent.name)
-
-#     ent.annotations.expectedPath = expectedpath
-#     return ent
+# TODO:
+# Could potentially get all the inforamation of the file entity right here
+# To avoid the syn.get rest call later which doesn't actually download the file
 
 
 def entity_date_to_timestamp(entity_date_time):
@@ -76,7 +57,6 @@ def get_center_input_files(syn, synid, center, downloadFile=True):
     for _, _, entities in center_files:
         for name, ent_synid in entities:
             ent = syn.get(ent_synid, downloadFile=downloadFile)
-
             prepared_center_file_list.append([ent])
 
     return prepared_center_file_list
@@ -166,7 +146,7 @@ def _send_validation_error_email(syn, user, message_objs):
                      f"Here are the reasons why:\n\n{errors}")
 
     date_now = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S")
-
+    # TODO: Edit subject title
     syn.sendMessage(userIds=[user],
                     messageSubject=f"GENIE Validation Error - {date_now}",
                     messageBody=email_message)
@@ -227,7 +207,8 @@ def validatefile(syn, project_id, entities, validation_status_table, error_track
     file_users = [entities[0].modifiedBy, entities[0].createdBy]
 
     check_file_status = check_existing_file_status(
-        validation_status_table, error_tracker_table, entities)
+        validation_status_table, error_tracker_table, entities
+    )
 
     status_list = check_file_status['status_list']
     error_list = check_file_status['error_list']
@@ -246,7 +227,8 @@ def validatefile(syn, project_id, entities, validation_status_table, error_track
         valid, message = validator.validate_single_file()
         logger.info("VALIDATION COMPLETE")
         input_status_list, invalid_errors_list = _get_status_and_error_list(
-            valid, message, entities)
+            valid, message, entities
+        )
         # Send email the first time the file is invalid
         if invalid_errors_list:
             messages_to_send.append((filenames, message, file_users))
@@ -283,7 +265,7 @@ def processfiles(syn, validfiles, center, path_to_genie,
     logger.info(f"PROCESSING {center} FILES: {len(validfiles)}")
     center_staging_folder = os.path.join(path_to_genie, center)
     center_staging_synid = center_mapping_df.query(
-        "center == '{}'".format(center)).stagingSynId.iloc[0]
+        f"center == '{center}'").stagingSynId.iloc[0]
 
     if not os.path.exists(center_staging_folder):
         os.makedirs(center_staging_folder)
@@ -353,8 +335,6 @@ def get_duplicated_files(validation_statusdf):
     files should be uploaded as new versions and the entire dataset
     should be uploaded everytime
 
-    #TODO: This is a custom GENIE function
-
     Args:
         validation_statusdf: dataframe with 'name' and 'id' column
         duplicated_error_message: Error message for duplicated files
@@ -363,22 +343,10 @@ def get_duplicated_files(validation_statusdf):
         dataframe with 'id', 'name', 'errors', 'center', 'fileType'
         and 'entity' of duplicated files
     '''
-    # This is special
     logger.info("CHECK FOR DUPLICATED FILES")
     duplicated_filesdf = validation_statusdf[
-        validation_statusdf['name'].duplicated(keep=False)]
-    # Define filename str vector
-    filename_str = validation_statusdf.name.str
-    # cbs/seg files should not be duplicated.
-    cbs_seg_index = filename_str.endswith(("cbs", "seg"))
-    cbs_seg_files = validation_statusdf[cbs_seg_index]
-    if len(cbs_seg_files) > 1:
-        duplicated_filesdf = duplicated_filesdf.append(cbs_seg_files)
-    # clinical files should not be duplicated.
-    clinical_index = filename_str.startswith("data_clinical_supp")
-    clinical_files = validation_statusdf[clinical_index]
-    if len(clinical_files) > 2:
-        duplicated_filesdf = duplicated_filesdf.append(clinical_files)
+        validation_statusdf['name'].duplicated(keep=False)
+    ]
     duplicated_filesdf.drop_duplicates("id", inplace=True)
     logger.info(f"THERE ARE {len(duplicated_filesdf)} DUPLICATED FILES")
     duplicated_filesdf['errors'] = DUPLICATED_FILE_ERROR
@@ -649,6 +617,7 @@ def center_input_to_database(syn, project_id, center,
                              only_validate, database_to_synid_mappingdf,
                              center_mapping_df, delete_old=False,
                              format_registry=None, validator_cls=None):
+    """Validate and process each center's input files"""
     if only_validate:
         log_path = os.path.join(process_functions.SCRIPT_DIR,
                                 f"{center}_validation_log.txt")
@@ -694,14 +663,14 @@ def center_input_to_database(syn, project_id, center,
 
     # only validate if there are center files
     if center_files:
-        validFiles = validation(syn, project_id, center, center_files,
+        validfiles = validation(syn, project_id, center, center_files,
                                 database_to_synid_mappingdf,
                                 format_registry, validator_cls)
     else:
         logger.info(f"{center} has not uploaded any files")
         return
 
-    if len(validFiles) > 0 and not only_validate:
+    if validfiles and not only_validate:
         # processTrackerSynId = process_functions.getDatabaseSynId(
         #     syn, "processTracker",
         #     databaseToSynIdMappingDf=database_to_synid_mappingdf)
@@ -727,7 +696,7 @@ def center_input_to_database(syn, project_id, center,
         #     syn.store(synapseclient.Table(
         #         processTrackerSynId, processTrackerDf))
 
-        processfiles(syn, validFiles, center, path_to_genie,
+        processfiles(syn, validfiles, center, path_to_genie,
                      center_mapping_df,
                      database_to_synid_mappingdf,
                      format_registry=format_registry)
