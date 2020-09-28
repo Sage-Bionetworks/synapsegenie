@@ -120,7 +120,8 @@ def get_syntabledf(syn, query_string):
     return tabledf
 
 
-def getDatabaseSynId(syn, tableName, project_id=None, databaseToSynIdMappingDf=None):
+def get_database_synid(syn, tablename, project_id=None,
+                       database_mappingdf=None):
     '''
     Get database synapse id from database to synapse id mapping table
 
@@ -134,46 +135,48 @@ def getDatabaseSynId(syn, tableName, project_id=None, databaseToSynIdMappingDf=N
     Returns:
         str:  Synapse id of wanted database
     '''
-    if databaseToSynIdMappingDf is None:
+    if database_mappingdf is None:
         database_mapping_info = get_dbmapping(syn, project_id=project_id)
-        databaseToSynIdMappingDf = database_mapping_info['df']
+        database_mappingdf = database_mapping_info['df']
 
-    synId = lookup_dataframe_value(databaseToSynIdMappingDf, "Id",
-                                   'Database == "{}"'.format(tableName))
-    return(synId)
+    synid = lookup_dataframe_value(database_mappingdf, "Id",
+                                   f'Database == "{tablename}"')
+    return synid
 
 
-def removeStringFloat(string):
-    '''
-    remove string float in tsv file
+def remove_string_float(string):
+    """Pandas dataframe returns integers sometimes as floats. This function
+    takes a string and removes the unnecessary .0 if the next character is
+    a tab or new line.
 
     Args:
         string: tsv file in string format
 
     Return:
         string: string with float removed
-    '''
+
+    """
     string = string.replace(".0\t", "\t")
     string = string.replace(".0\n", "\n")
-    return(string)
+    return string
 
 
-def removePandasDfFloat(df, header=True):
-    '''
-    Remove decimal for integers due to pandas
+def remove_df_float(df, header=True):
+    """Remove decimal for integers given a pandas dataframe
 
     Args:
-        df:  Pandas dataframe
+        df: Pandas dataframe
+        header: Should string include header row. Default to true.
 
     Return:
         str: tsv in text
-    '''
+    """
     if header:
         text = df.to_csv(sep="\t", index=False)
     else:
         text = df.to_csv(sep="\t", index=False, header=None)
 
-    text = removeStringFloat(text)
+    text = remove_string_float(text)
     return text
 
 
@@ -737,8 +740,8 @@ def create_new_fileformat_table(syn: Synapse,
     database_mappingdf = db_info['df']
     dbmapping_synid = db_info['synid']
 
-    olddb_synid = getDatabaseSynId(syn, file_format,
-                                   databaseToSynIdMappingDf=database_mappingdf)
+    olddb_synid = get_database_synid(syn, file_format,
+                                     database_mappingdf=database_mappingdf)
     olddb_ent = syn.get(olddb_synid)
     olddb_columns = list(syn.getTableColumns(olddb_synid))
 

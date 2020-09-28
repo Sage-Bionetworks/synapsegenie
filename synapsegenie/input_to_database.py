@@ -529,12 +529,12 @@ def validation(syn, project_id, center, center_files,
         dataframe: Valid files
     '''
     logger.info(f"{center} has uploaded {len(center_files)} files.")
-    validation_status_synid = process_functions.getDatabaseSynId(
+    validation_status_synid = process_functions.get_database_synid(
         syn, "validationStatus",
-        databaseToSynIdMappingDf=database_synid_mappingdf)
-    error_tracker_synid = process_functions.getDatabaseSynId(
+        database_mappingdf=database_synid_mappingdf)
+    error_tracker_synid = process_functions.get_database_synid(
         syn, "errorTracker",
-        databaseToSynIdMappingDf=database_synid_mappingdf)
+        database_mappingdf=database_synid_mappingdf)
 
     # Make sure the vcf validation statuses don't get wiped away
     # If process is not vcf, the vcf files are not downloaded
@@ -671,9 +671,9 @@ def center_input_to_database(syn, project_id, center,
         return
 
     if validfiles and not only_validate:
-        # processTrackerSynId = process_functions.getDatabaseSynId(
+        # processTrackerSynId = process_functions.get_database_synid(
         #     syn, "processTracker",
-        #     databaseToSynIdMappingDf=database_to_synid_mappingdf)
+        #     database_mappingdf=database_to_synid_mappingdf)
         # # Add process tracker for time start
         # processTracker = syn.tableQuery(
         #     "SELECT timeStartProcessing FROM {} "
@@ -723,8 +723,8 @@ def center_input_to_database(syn, project_id, center,
         logger.info(message_out.format(center))
 
     # Store log file
-    log_folder_synid = process_functions.getDatabaseSynId(
-        syn, "logs", databaseToSynIdMappingDf=database_to_synid_mappingdf
+    log_folder_synid = process_functions.get_database_synid(
+        syn, "logs", database_mappingdf=database_to_synid_mappingdf
     )
     syn.store(synapseclient.File(log_path, parentId=log_folder_synid))
     os.remove(log_path)

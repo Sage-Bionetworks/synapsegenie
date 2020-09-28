@@ -124,9 +124,8 @@ def process(syn, project_id, center=None, pemfile=None,
     db_mapping_info = process_functions.get_dbmapping(syn, project_id)
     database_mappingdf = db_mapping_info['df']
 
-    center_mapping_id = process_functions.getDatabaseSynId(
-        syn, "centerMapping",
-        databaseToSynIdMappingDf=database_mappingdf
+    center_mapping_id = process_functions.get_database_synid(
+        syn, "centerMapping", database_mappingdf=database_mappingdf
     )
 
     center_mapping = syn.tableQuery(f'SELECT * FROM {center_mapping_id}')
@@ -159,8 +158,8 @@ def process(syn, project_id, center=None, pemfile=None,
             validator_cls=validator_cls
         )
 
-    # error_tracker_synid = process_functions.getDatabaseSynId(
-    #     syn, "errorTracker", databaseToSynIdMappingDf=database_mappingdf
+    # error_tracker_synid = process_functions.get_database_synid(
+    #     syn, "errorTracker", database_mappingdf=database_mappingdf
     # )
     # Only write out invalid reasons if the center
     # isnt specified and if only validate
