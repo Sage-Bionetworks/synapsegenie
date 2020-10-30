@@ -1,13 +1,8 @@
 #!/usr/bin/env python3
-import importlib
-import inspect
 import logging
-import sys
 
 import synapseclient
 from synapseclient.core.exceptions import SynapseHTTPError
-
-from . import example_filetype_format, process_functions
 
 logger = logging.getLogger(__name__)
 
