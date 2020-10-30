@@ -1,20 +1,13 @@
 """Processing functions"""
-import ast
 from datetime import date
 import logging
 import os
 import tempfile
-import time
 
-from Crypto.PublicKey import RSA
 import pandas as pd
 import synapseclient
 from synapseclient import Synapse
 
-# try:
-#   from urllib.request import urlopen
-# except ImportError:
-#   from urllib2 import urlopen
 # Ignore SettingWithCopyWarning warning
 pd.options.mode.chained_assignment = None
 
@@ -246,7 +239,7 @@ def _delete_rows(new_datasetdf, databasedf, checkby):
         logger.info("No deleted rows")
 
     # del deletedf[checkby]
-    return(delete_rowid_version)
+    return delete_rowid_version
 
 
 def _create_update_rowsdf(updating_databasedf, updatesetdf,
@@ -320,13 +313,12 @@ def _update_rows(new_datasetdf, databasedf, checkby):
     toupdatedf = _create_update_rowsdf(
         updating_databasedf, updatesetdf, rowids, differentrows)
 
-    return(toupdatedf)
+    return toupdatedf
 
 
-def updateData(
-        syn, databaseSynId, newData,
-        filterBy, filterByColumn="CENTER",
-        col=None, toDelete=False):
+def updateData(syn, databaseSynId, newData,
+               filterBy, filterByColumn="CENTER",
+               col=None, toDelete=False):
     databaseEnt = syn.get(databaseSynId)
     database = syn.tableQuery(
         "SELECT * FROM {} where {} ='{}'".format(

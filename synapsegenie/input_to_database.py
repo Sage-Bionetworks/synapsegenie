@@ -62,7 +62,8 @@ def get_center_input_files(syn, synid, center, downloadFile=True):
     return prepared_center_file_list
 
 
-def check_existing_file_status(validation_status_table, error_tracker_table, entities):
+def check_existing_file_status(validation_status_table, error_tracker_table,
+                               entities):
     '''
     This function checks input files against the existing validation and error
     tracking dataframe
