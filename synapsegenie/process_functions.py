@@ -8,9 +8,6 @@ import time
 
 from Crypto.PublicKey import RSA
 import pandas as pd
-import requests
-from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
 import synapseclient
 from synapseclient import Synapse
 
@@ -24,67 +21,6 @@ pd.options.mode.chained_assignment = None
 logger = logging.getLogger(__name__)
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-
-
-def retry_get_url(url):
-    '''
-    Implement retry logic when getting urls.
-    Timesout at 3 seconds, retries 5 times.
-
-    Args:
-        url:  Http or https url
-
-    Returns:
-        requests.get()
-    '''
-    s = requests.Session()
-    retries = Retry(total=5, backoff_factor=1)
-    s.mount('http://', HTTPAdapter(max_retries=retries))
-    s.mount('https://', HTTPAdapter(max_retries=retries))
-    response = s.get(url, timeout=3)
-    return(response)
-
-
-def checkUrl(url):
-    '''
-    Check if URL link is live
-
-    Args:
-        url: web URL
-    '''
-    temp = retry_get_url(url)
-    assert temp.status_code == 200, "%s site is down" % url
-
-
-def getGenieMapping(syn, synId):
-    """
-    This function gets the GENIE mapping tables
-
-    Args:
-        synId: Synapse Id of synapse table
-
-    Returns:
-        df: Table dataframe
-    """
-    table_ent = syn.tableQuery('SELECT * FROM %s' % synId)
-    table = table_ent.asDataFrame()
-    table = table.fillna("")
-    return(table)
-
-
-def checkColExist(DF, key):
-    """
-    This function checks if the column exists in a dataframe
-
-    Args:
-        DF: pandas dataframe
-        key: Expected column header name
-
-    Returns:
-        bool:  True if column exists
-    """
-    result = False if DF.get(key) is None else True
-    return(result)
 
 
 def lookup_dataframe_value(df, col, query):
@@ -101,7 +37,7 @@ def lookup_dataframe_value(df, col, query):
     '''
     query = df.query(query)
     query_val = query[col].iloc[0]
-    return(query_val)
+    return query_val
 
 
 def get_syntabledf(syn, query_string):
@@ -278,7 +214,7 @@ def _append_rows(new_datasetdf, databasedf, checkby):
         logger.info("No new rows")
     del appenddf[checkby]
     appenddf.reset_index(drop=True, inplace=True)
-    return(appenddf)
+    return appenddf
 
 
 def _delete_rows(new_datasetdf, databasedf, checkby):
@@ -313,8 +249,8 @@ def _delete_rows(new_datasetdf, databasedf, checkby):
     return(delete_rowid_version)
 
 
-def _create_update_rowsdf(
-        updating_databasedf, updatesetdf, rowids, differentrows):
+def _create_update_rowsdf(updating_databasedf, updatesetdf,
+                          rowids, differentrows):
     '''
     Create the update dataset dataframe
 
@@ -341,7 +277,7 @@ def _create_update_rowsdf(
     else:
         toupdatedf = pd.DataFrame()
         logger.info("No updated rows")
-    return(toupdatedf)
+    return toupdatedf
 
 
 def _update_rows(new_datasetdf, databasedf, checkby):
@@ -546,94 +482,6 @@ def check_col_and_values(df, col, possible_values, filename, na_allowed=False,
                             str(value).replace(".0", "")
                             for value in possible_values])))
     return(warning, error)
-
-
-# def createKey():
-#   import Crypto
-#   from Crypto.PublicKey import RSA
-#   from Crypto import Random
-
-#   random_generator = Random.new().read
-#   generate public and private keys
-#   key = RSA.generate(1024, random_generator)
-
-#   #publickey = key.publickey # pub key export for exchange
-#   encrypted = key.encrypt(geniePassword, 32)
-#   #message to encrypt is in the above line 'encrypt this message'
-#   descrypted = key.decrypt(encrypted)
-#   with open("genie.pem","w") as geniePem:
-#       geniePem.write(key.exportKey(format='PEM'))
-
-
-def read_key(pemfile_path):
-    '''
-    Obtain key from pemfile
-
-    Args:
-        pemfile_path:  Path to pemfile
-
-    Returns:
-        RSA key
-    '''
-    f = open(pemfile_path, 'r')
-    key = RSA.importKey(f.read())
-    return(key)
-
-
-def decrypt_message(message, key):
-    '''
-    Decrypt message with a pem key from
-    func read_key
-
-    Args:
-        message: Encrypted message
-        key: read_key returned key
-
-    Returns:
-        Decrypted message
-    '''
-    decrypted = key.decrypt(ast.literal_eval(str(message)))
-    return(decrypted.decode("utf-8"))
-
-
-def get_password(pemfile_path):
-    '''
-    Get password using pemfile
-
-    Args:
-        pemfile_path: Path to pem file
-
-    Return:
-        Password
-    '''
-    if not os.path.exists(pemfile_path):
-        raise ValueError(
-            "Path to pemFile must be specified if there "
-            "is no cached credentials")
-    key = read_key(pemfile_path)
-    genie_pass = decrypt_message(os.environ['GENIE_PASS'], key)
-    return(genie_pass)
-
-
-def synLogin(pemfile_path, debug=False):
-    '''
-    Use pem file to log into synapse if credentials aren't cached
-
-    Args:
-        pemfile_path: Path to pem file
-        debug: Synapse debug feature.  Defaults to False
-
-    Returns:
-        Synapse object logged in
-    '''
-    try:
-        syn = synapseclient.Synapse(debug=debug)
-        syn.login()
-    except Exception:
-        genie_pass = get_password(pemfile_path)
-        syn = synapseclient.Synapse(debug=debug)
-        syn.login(os.environ['GENIE_USER'], genie_pass)
-    return syn
 
 
 def _create_schema(syn, table_name, parentid, columns=None, annotations=None):

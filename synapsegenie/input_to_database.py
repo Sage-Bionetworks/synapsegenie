@@ -11,7 +11,7 @@ from synapseclient.core.utils import to_unix_epoch_time
 import synapseutils
 import pandas as pd
 
-from . import process_functions, validate
+from . import process_functions
 
 logger = logging.getLogger(__name__)
 
@@ -178,8 +178,8 @@ def _get_status_and_error_list(valid, message, entities):
     return input_status_list, invalid_errors_list
 
 
-def validatefile(syn, project_id, entities, validation_status_table, error_tracker_table,
-                 center, format_registry=None,
+def validatefile(syn, project_id, entities, validation_status_table,
+                 error_tracker_table, center, format_registry=None,
                  validator_cls=None):
     '''Validate a list of entities.
 
@@ -187,7 +187,8 @@ def validatefile(syn, project_id, entities, validation_status_table, error_track
 
     Args:
         syn: Synapse object
-        entities: A list of entities for a single file 'type' (usually a single file, but clinical can have two)
+        entities: A list of entities for a single file 'type'
+                  (usually a single file, but clinical can have two)
         validation_statusdf: Validation status dataframe
         error_trackerdf: Invalid files error tracking dataframe
         center: Center of interest
