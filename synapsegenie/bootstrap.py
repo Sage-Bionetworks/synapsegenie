@@ -129,10 +129,13 @@ def create_error_tracking_table(syn, parent):
                          parent=parent)
 
 
-def main(syn, project, format_registry=['example_registry'],
-         centers=[]):
+def main(syn, project, format_registry=None, centers=None):
     # TODO: add PRIMARY_KEY annotation to each of the tables
-
+    # Dangerous to have lists as default values
+    if format_registry is None:
+        format_registry = ['example_registry']
+    if centers is None:
+        centers = []
     # Determine the short and long names of the centers.
     center_abbreviations = centers
     center_names = center_abbreviations
