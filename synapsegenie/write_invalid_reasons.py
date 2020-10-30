@@ -1,9 +1,9 @@
 """Write invalid reasons"""
 import logging
-import os
+# import os
 
 import pandas as pd
-import synapseclient
+# import synapseclient
 from synapseclient import Synapse
 
 logging.basicConfig()
