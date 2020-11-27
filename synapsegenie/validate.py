@@ -1,19 +1,14 @@
 #!/usr/bin/env python3
-import importlib
-import inspect
 import logging
-import sys
 
 import synapseclient
 from synapseclient.core.exceptions import SynapseHTTPError
-
-from . import example_filetype_format, process_functions
 
 logger = logging.getLogger(__name__)
 
 
 class ValidationHelper(object):
-
+    """Validation helper"""
     # Used for the kwargs in validate_single_file
     # Overload this per class
     _validate_kwargs = []
@@ -24,7 +19,8 @@ class ValidationHelper(object):
 
         Args:
             syn: a synapseclient.Synapse object
-            project_id: Synapse Project ID where files are stored and configured.
+            project_id: Synapse Project ID where files are stored and
+                        configured.
             center: The participating center name.
             filepathlist: a list of file paths.
             format_registry: A dictionary mapping file format name to the
@@ -53,7 +49,9 @@ class ValidationHelper(object):
         filetype = None
         # Loop through file formats
         for file_format in self._format_registry:
-            validator = self._format_registry[file_format](self._synapse_client, self.center)
+            validator = self._format_registry[file_format](
+                self._synapse_client, self.center
+            )
             try:
                 filenames = [entity.name for entity in self.entitylist]
                 filetype = validator.validateFilename(filenames)
@@ -74,21 +72,24 @@ class ValidationHelper(object):
 
         if self.file_type not in self._format_registry:
             valid = False
-            errors = "Your filename is incorrect! Please change your filename before you run the validator or specify --filetype if you are running the validator locally"
+            errors = ("Your filename is incorrect! Please change your "
+                      "filename before you run the validator or specify "
+                      "--filetype if you are running the validator locally")
             warnings = ""
         else:
             mykwargs = {}
             for required_parameter in self._validate_kwargs:
                 assert required_parameter in kwargs.keys(), \
-                    "%s not in parameter list" % required_parameter
+                    f"{required_parameter} not in parameter list"
                 mykwargs[required_parameter] = kwargs[required_parameter]
                 mykwargs['project_id'] = self._project.id
 
             validator_cls = self._format_registry[self.file_type]
             validator = validator_cls(self._synapse_client, self.center)
             filepathlist = [entity.path for entity in self.entitylist]
-            valid, errors, warnings = validator.validate(filePathList=filepathlist,
-                                                         **mykwargs)
+            valid, errors, warnings = validator.validate(
+                filePathList=filepathlist, **mykwargs
+            )
 
         # Complete error message
         message = collect_errors_and_warnings(errors, warnings)

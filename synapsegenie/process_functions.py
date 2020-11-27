@@ -1,90 +1,19 @@
 """Processing functions"""
-import ast
 from datetime import date
 import logging
 import os
 import tempfile
-import time
 
-from Crypto.PublicKey import RSA
 import pandas as pd
-import requests
-from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
 import synapseclient
 from synapseclient import Synapse
 
-# try:
-#   from urllib.request import urlopen
-# except ImportError:
-#   from urllib2 import urlopen
 # Ignore SettingWithCopyWarning warning
 pd.options.mode.chained_assignment = None
 
 logger = logging.getLogger(__name__)
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-
-
-def retry_get_url(url):
-    '''
-    Implement retry logic when getting urls.
-    Timesout at 3 seconds, retries 5 times.
-
-    Args:
-        url:  Http or https url
-
-    Returns:
-        requests.get()
-    '''
-    s = requests.Session()
-    retries = Retry(total=5, backoff_factor=1)
-    s.mount('http://', HTTPAdapter(max_retries=retries))
-    s.mount('https://', HTTPAdapter(max_retries=retries))
-    response = s.get(url, timeout=3)
-    return(response)
-
-
-def checkUrl(url):
-    '''
-    Check if URL link is live
-
-    Args:
-        url: web URL
-    '''
-    temp = retry_get_url(url)
-    assert temp.status_code == 200, "%s site is down" % url
-
-
-def getGenieMapping(syn, synId):
-    """
-    This function gets the GENIE mapping tables
-
-    Args:
-        synId: Synapse Id of synapse table
-
-    Returns:
-        df: Table dataframe
-    """
-    table_ent = syn.tableQuery('SELECT * FROM %s' % synId)
-    table = table_ent.asDataFrame()
-    table = table.fillna("")
-    return(table)
-
-
-def checkColExist(DF, key):
-    """
-    This function checks if the column exists in a dataframe
-
-    Args:
-        DF: pandas dataframe
-        key: Expected column header name
-
-    Returns:
-        bool:  True if column exists
-    """
-    result = False if DF.get(key) is None else True
-    return(result)
 
 
 def lookup_dataframe_value(df, col, query):
@@ -101,7 +30,7 @@ def lookup_dataframe_value(df, col, query):
     '''
     query = df.query(query)
     query_val = query[col].iloc[0]
-    return(query_val)
+    return query_val
 
 
 def get_syntabledf(syn, query_string):
@@ -120,7 +49,8 @@ def get_syntabledf(syn, query_string):
     return tabledf
 
 
-def getDatabaseSynId(syn, tableName, project_id=None, databaseToSynIdMappingDf=None):
+def get_database_synid(syn, tablename, project_id=None,
+                       database_mappingdf=None):
     '''
     Get database synapse id from database to synapse id mapping table
 
@@ -134,73 +64,72 @@ def getDatabaseSynId(syn, tableName, project_id=None, databaseToSynIdMappingDf=N
     Returns:
         str:  Synapse id of wanted database
     '''
-    if databaseToSynIdMappingDf is None:
+    if database_mappingdf is None:
         database_mapping_info = get_dbmapping(syn, project_id=project_id)
-        databaseToSynIdMappingDf = database_mapping_info['df']
+        database_mappingdf = database_mapping_info['df']
 
-    synId = lookup_dataframe_value(databaseToSynIdMappingDf, "Id",
-                                   'Database == "{}"'.format(tableName))
-    return(synId)
+    synid = lookup_dataframe_value(database_mappingdf, "Id",
+                                   f'Database == "{tablename}"')
+    return synid
 
 
-def removeStringFloat(string):
-    '''
-    remove string float in tsv file
+def remove_string_float(string):
+    """Pandas dataframe returns integers sometimes as floats. This function
+    takes a string and removes the unnecessary .0 if the next character is
+    a tab or new line.
 
     Args:
         string: tsv file in string format
 
     Return:
         string: string with float removed
-    '''
+
+    """
     string = string.replace(".0\t", "\t")
     string = string.replace(".0\n", "\n")
-    return(string)
+    return string
 
 
-def removePandasDfFloat(df, header=True):
-    '''
-    Remove decimal for integers due to pandas
+def remove_df_float(df, header=True):
+    """Remove decimal for integers given a pandas dataframe
 
     Args:
-        df:  Pandas dataframe
+        df: Pandas dataframe
+        header: Should string include header row. Default to true.
 
     Return:
         str: tsv in text
-    '''
+    """
     if header:
         text = df.to_csv(sep="\t", index=False)
     else:
         text = df.to_csv(sep="\t", index=False, header=None)
 
-    text = removeStringFloat(text)
-    return(text)
+    text = remove_string_float(text)
+    return text
 
 
-def storeFile(syn, fileName, parentId,
-              center, fileFormat, dataSubType,
-              platform=None,
-              cBioFileFormat=None,
-              used=None):
-    """Storing Files along with annotations"""
+def store_file(syn, filepath, parentid, name=None, annotations={},
+               used=None, executed=None):
+    """Storing Files along with annotations
+
+    Args:
+        filepath: Path to file
+        parentid: Project or Folder Synapse id
+        name: Name of entity. Defaults to filename
+        annotations:  Synapse annotations to add
+        used: List of used entitys or links.
+        executed:  List of scripts executed
+
+    Returns:
+        File Entity
+
+    """
     logger.info("STORING FILES")
-    fileEnt = synapseclient.File(fileName, parent=parentId)
-    fileEnt.center = center
-    fileEnt.species = "Human"
-    fileEnt.consortium = 'GENIE'
-    fileEnt.dataType = "genomicVariants"
-    fileEnt.fundingAgency = "AACR"
-    fileEnt.assay = 'targetGeneSeq'
-    fileEnt.fileFormat = fileFormat
-    fileEnt.dataSubType = dataSubType
-    fileEnt.fileStage = "staging"
-    fileEnt.platform = platform
-    if platform is not None:
-        fileEnt.platform = platform
-    if cBioFileFormat is not None:
-        fileEnt.cBioFileFormat = cBioFileFormat
-    ent = syn.store(fileEnt, used=used)
-    return(ent)
+    file_ent = synapseclient.File(filepath, parent=parentid, name=name)
+    file_ent.annotations.update(annotations)
+    file_ent = syn.store(file_ent, used=used, executed=executed)
+    return file_ent
 
 
 def _check_valid_df(df, col):
@@ -214,8 +143,7 @@ def _check_valid_df(df, col):
     if not isinstance(df, pd.DataFrame):
         raise ValueError("Must pass in pandas dataframe")
     if df.get(col) is None:
-        raise ValueError("'{}' column must exist in dataframe".format(
-            col))
+        raise ValueError(f"'{col}' column must exist in dataframe")
 
 
 def _get_left_diff_df(left, right, checkby):
@@ -234,7 +162,7 @@ def _get_left_diff_df(left, right, checkby):
     _check_valid_df(left, checkby)
     _check_valid_df(right, checkby)
     diffdf = left[~left[checkby].isin(right[checkby])]
-    return(diffdf)
+    return diffdf
 
 
 def _get_left_union_df(left, right, checkby):
@@ -253,7 +181,7 @@ def _get_left_union_df(left, right, checkby):
     _check_valid_df(left, checkby)
     _check_valid_df(right, checkby)
     uniondf = left[left[checkby].isin(right[checkby])]
-    return(uniondf)
+    return uniondf
 
 
 def _append_rows(new_datasetdf, databasedf, checkby):
@@ -279,7 +207,7 @@ def _append_rows(new_datasetdf, databasedf, checkby):
         logger.info("No new rows")
     del appenddf[checkby]
     appenddf.reset_index(drop=True, inplace=True)
-    return(appenddf)
+    return appenddf
 
 
 def _delete_rows(new_datasetdf, databasedf, checkby):
@@ -311,11 +239,11 @@ def _delete_rows(new_datasetdf, databasedf, checkby):
         logger.info("No deleted rows")
 
     # del deletedf[checkby]
-    return(delete_rowid_version)
+    return delete_rowid_version
 
 
-def _create_update_rowsdf(
-        updating_databasedf, updatesetdf, rowids, differentrows):
+def _create_update_rowsdf(updating_databasedf, updatesetdf,
+                          rowids, differentrows):
     '''
     Create the update dataset dataframe
 
@@ -342,7 +270,7 @@ def _create_update_rowsdf(
     else:
         toupdatedf = pd.DataFrame()
         logger.info("No updated rows")
-    return(toupdatedf)
+    return toupdatedf
 
 
 def _update_rows(new_datasetdf, databasedf, checkby):
@@ -385,13 +313,12 @@ def _update_rows(new_datasetdf, databasedf, checkby):
     toupdatedf = _create_update_rowsdf(
         updating_databasedf, updatesetdf, rowids, differentrows)
 
-    return(toupdatedf)
+    return toupdatedf
 
 
-def updateData(
-        syn, databaseSynId, newData,
-        filterBy, filterByColumn="CENTER",
-        col=None, toDelete=False):
+def updateData(syn, databaseSynId, newData,
+               filterBy, filterByColumn="CENTER",
+               col=None, toDelete=False):
     databaseEnt = syn.get(databaseSynId)
     database = syn.tableQuery(
         "SELECT * FROM {} where {} ='{}'".format(
@@ -479,164 +406,6 @@ def updateDatabase(syn, database, new_dataset, database_synid,
     os.unlink(update_all_file.name)
 
 
-def checkInt(element):
-    '''
-    Check if an item can become an integer
-
-    Args:
-        element: Any variable and type
-
-    Returns:
-        boolean: True/False
-    '''
-    try:
-        element = float(element)
-        return(element.is_integer())
-    except (ValueError, TypeError):
-        return(False)
-
-
-def check_col_and_values(df, col, possible_values, filename, na_allowed=False,
-                         required=False, sep=None):
-    '''
-    This function checks if the column exists then checks if the values in the
-    column have the correct values
-
-    Args:
-        df: Input dataframe
-        col: Expected column name
-        possible_values: list of possible values
-        filename: Name of file
-        required: If the column is required.  Default is False
-
-    Returns:
-        tuple: warning, error
-    '''
-    warning = ""
-    error = ""
-    have_column = checkColExist(df, col)
-    if not have_column:
-        if required:
-            error = "{filename}: Must have {col} column.\n".format(
-                filename=filename, col=col)
-        else:
-            warning = (
-                "{filename}: Doesn't have {col} column. "
-                "This column will be added\n".format(
-                    filename=filename, col=col))
-    else:
-        if na_allowed:
-            check_values = df[col].dropna()
-        else:
-            check_values = df[col]
-        if sep:
-            final = []
-            for value in check_values:
-                final.extend(value.split(sep))
-            check_values = pd.Series(final)
-        if not check_values.isin(possible_values).all():
-            error = (
-                "{filename}: Please double check your {col} column.  "
-                "This column must only be these values: {possible_vals}\n"
-                .format(filename=filename,
-                        col=col,
-                        possible_vals=', '.join([
-                            # This is done because of pandas typing.
-                            # An integer column with one NA/blank value
-                            # will be cast as a double.
-                            str(value).replace(".0", "")
-                            for value in possible_values])))
-    return(warning, error)
-
-
-# def createKey():
-#   import Crypto
-#   from Crypto.PublicKey import RSA
-#   from Crypto import Random
-
-#   random_generator = Random.new().read
-#   generate public and private keys
-#   key = RSA.generate(1024, random_generator)
-
-#   #publickey = key.publickey # pub key export for exchange
-#   encrypted = key.encrypt(geniePassword, 32)
-#   #message to encrypt is in the above line 'encrypt this message'
-#   descrypted = key.decrypt(encrypted)
-#   with open("genie.pem","w") as geniePem:
-#       geniePem.write(key.exportKey(format='PEM'))
-
-
-def read_key(pemfile_path):
-    '''
-    Obtain key from pemfile
-
-    Args:
-        pemfile_path:  Path to pemfile
-
-    Returns:
-        RSA key
-    '''
-    f = open(pemfile_path, 'r')
-    key = RSA.importKey(f.read())
-    return(key)
-
-
-def decrypt_message(message, key):
-    '''
-    Decrypt message with a pem key from
-    func read_key
-
-    Args:
-        message: Encrypted message
-        key: read_key returned key
-
-    Returns:
-        Decrypted message
-    '''
-    decrypted = key.decrypt(ast.literal_eval(str(message)))
-    return(decrypted.decode("utf-8"))
-
-
-def get_password(pemfile_path):
-    '''
-    Get password using pemfile
-
-    Args:
-        pemfile_path: Path to pem file
-
-    Return:
-        Password
-    '''
-    if not os.path.exists(pemfile_path):
-        raise ValueError(
-            "Path to pemFile must be specified if there "
-            "is no cached credentials")
-    key = read_key(pemfile_path)
-    genie_pass = decrypt_message(os.environ['GENIE_PASS'], key)
-    return(genie_pass)
-
-
-def synLogin(pemfile_path, debug=False):
-    '''
-    Use pem file to log into synapse if credentials aren't cached
-
-    Args:
-        pemfile_path: Path to pem file
-        debug: Synapse debug feature.  Defaults to False
-
-    Returns:
-        Synapse object logged in
-    '''
-    try:
-        syn = synapseclient.Synapse(debug=debug)
-        syn.login()
-    except Exception:
-        genie_pass = get_password(pemfile_path)
-        syn = synapseclient.Synapse(debug=debug)
-        syn.login(os.environ['GENIE_USER'], genie_pass)
-    return(syn)
-
-
 def _create_schema(syn, table_name, parentid, columns=None, annotations=None):
     """Creates Table Schema
 
@@ -677,8 +446,7 @@ def _update_database_mapping(syn, database_synid_mappingdf,
     # Only update the one row
     to_update_row = database_synid_mappingdf[fileformat_ind]
 
-    updated_table = syn.store(synapseclient.Table(database_mapping_synid,
-                                                  to_update_row))
+    syn.store(synapseclient.Table(database_mapping_synid, to_update_row))
     return database_synid_mappingdf
 
 
@@ -741,8 +509,8 @@ def create_new_fileformat_table(syn: Synapse,
     database_mappingdf = db_info['df']
     dbmapping_synid = db_info['synid']
 
-    olddb_synid = getDatabaseSynId(syn, file_format,
-                                   databaseToSynIdMappingDf=database_mappingdf)
+    olddb_synid = get_database_synid(syn, file_format,
+                                     database_mappingdf=database_mappingdf)
     olddb_ent = syn.get(olddb_synid)
     olddb_columns = list(syn.getTableColumns(olddb_synid))
 

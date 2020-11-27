@@ -1,9 +1,9 @@
 """Write invalid reasons"""
 import logging
-import os
+# import os
 
 import pandas as pd
-import synapseclient
+# import synapseclient
 from synapseclient import Synapse
 
 logging.basicConfig()
@@ -38,7 +38,8 @@ logger.setLevel(logging.INFO)
 #         os.remove(center + "_errors.txt")
 
 
-def _combine_center_file_errors(syn: Synapse, center_errorsdf: pd.DataFrame) -> str:
+def _combine_center_file_errors(syn: Synapse,
+                                center_errorsdf: pd.DataFrame) -> str:
     """Combine all center errors into one printable string
 
     Args:

@@ -579,8 +579,8 @@ class TestValidation:
         self.with_dupsdf = pd.DataFrame({
             'id': [sample_clinical_entity.id,
                    'syn2345', 'syn5555', 'syn1224', 'syn34444'],
-            'name': ['first.cbs', 'second.seg', 'data_clinical_supp_1',
-                     'data_clinical_supp_2', 'data_clinical_supp_3'],
+            'name': ['test.txt', 'test.txt', 'test.txt',
+                     'test.txt', 'test.txt'],
             'center': ['SAGE']*5,
             'fileType': ['type']*5,
             'entity': ['entity']*5
