@@ -672,7 +672,8 @@ def center_input_to_database(syn, project_id, center,
         logger.info(f"{center} has not uploaded any files")
         return
 
-    if validfiles and not only_validate:
+    # validfiles is a dataframe
+    if len(validfiles.index) and not only_validate:
         # processTrackerSynId = process_functions.get_database_synid(
         #     syn, "processTracker",
         #     database_mappingdf=database_to_synid_mappingdf)
