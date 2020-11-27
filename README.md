@@ -39,12 +39,31 @@ synapsegenie bootstrap-infra --format_registry_packages example_registry \
 ```
 
 ### File Validator
-This will install all the necessary components for you to run the validator locally on all of your files, including the Synapse client.  Please view the help to see how to run to validator.
+The `synapsegenie` package also has a function to run the validator locally on all of your files. Please view the help to see how to run to validator.
 
 ```
 synapsegenie validate-single-file -h
+
+synapsegenie /path/to/file center_name \
+             --format_registry_packages example_registry \
+             --project_id syn12345 \ # Run bootstrap-infra to create a Synapse project
 ```
 
+### Validation/Processing
+`synapsegenie` will validate and process all the files uploaded by centers.  Every valid file will be processed and uploaded into Synapse tables.
+
+```
+synapsegenie process -h
+
+# only validate
+synapsegenie process --format_registry_packages example_registry \
+                     --project_id syn12345
+                     --only_validate
+
+# validate + process
+synapsegenie process --format_registry_packages example_registry \
+                     --project_id syn12345
+```
 
 ## Contributing
 
