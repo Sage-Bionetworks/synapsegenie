@@ -316,9 +316,9 @@ def _update_rows(new_datasetdf, databasedf, checkby):
     return toupdatedf
 
 
-def updateData(syn, databaseSynId, newData,
-               filterBy, filterByColumn="CENTER",
-               col=None, toDelete=False):
+def update_data(syn, databaseSynId, newData,
+                filterBy, filterByColumn="CENTER",
+                col=None, toDelete=False):
     databaseEnt = syn.get(databaseSynId)
     database = syn.tableQuery(
         "SELECT * FROM {} where {} ='{}'".format(

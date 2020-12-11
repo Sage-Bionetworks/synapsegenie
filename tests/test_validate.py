@@ -40,7 +40,7 @@ def test_perfect_determine_filetype():
     """
     filetype = "clincial"
     ent_list = [SAMPLE_ENT]
-    with patch.object(FileFormat, "validateFilename",
+    with patch.object(FileFormat, "validate_filetype",
                       return_value=filetype):
         validator = validate.ValidationHelper(
             syn, None, CENTER, ent_list,

@@ -7,7 +7,7 @@ from synapseclient.core.exceptions import SynapseHTTPError
 logger = logging.getLogger(__name__)
 
 
-class ValidationHelper(object):
+class ValidationHelper:
     """Validation helper"""
     # Used for the kwargs in validate_single_file
     # Overload this per class
