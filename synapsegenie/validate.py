@@ -54,7 +54,7 @@ class ValidationHelper:
             )
             try:
                 filenames = [entity.name for entity in self.entitylist]
-                filetype = validator.validateFilename(filenames)
+                filetype = validator.validate_filetype(filenames)
             except AssertionError:
                 continue
             # If valid filename, return file type.

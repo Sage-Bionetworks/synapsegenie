@@ -55,7 +55,7 @@ def test_wrongfilename_noerror_determine_filetype():
     when raise_error flag is False
     '''
     ent_list = [WRONG_NAME_ENT]
-    with patch.object(FileFormat, "validateFilename",
+    with patch.object(FileFormat, "validate_filetype",
                       side_effect=AssertionError):
         validator = validate.ValidationHelper(
             syn, project_id=None,
@@ -149,7 +149,7 @@ def test_filetype_validate_single_file():
                       "filename before you run the validator or specify "
                       "--filetype if you are running the validator locally")
 
-    with patch.object(FileFormat, "validateFilename",
+    with patch.object(FileFormat, "validate_filetype",
                       side_effect=AssertionError):
         validator = validate.ValidationHelper(
             syn=syn, project_id=None, center=CENTER, entitylist=entitylist,
