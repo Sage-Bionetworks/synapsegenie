@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 class Csv(FileTypeFormat):
 
-    _fileType = "csv"
+    _filetype = "csv"
 
     _process_kwargs = ["databaseSynId"]
 
@@ -33,5 +33,5 @@ class Csv(FileTypeFormat):
         total_error = ""
         warning = ""
         if df.empty:
-            total_error += "{}: File must not be empty".format(self._fileType)
+            total_error += "{}: File must not be empty".format(self._filetype)
         return total_error, warning

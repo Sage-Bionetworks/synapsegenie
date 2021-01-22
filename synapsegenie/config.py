@@ -10,16 +10,16 @@ logger = logging.getLogger(__name__)
 
 
 def make_format_registry_dict(cls_list: list) -> dict:
-    """Use an object's _fileType attribute to make a class lookup dictionary.
+    """Use an object's _filetype attribute to make a class lookup dictionary.
 
     Args:
         cls_list: A list of Python classes.
 
     Returns:
-        A dictionary mapping the class._fileType to the class.
+        A dictionary mapping the class._filetype to the class.
 
     """
-    return {cls._fileType: cls for cls in cls_list}
+    return {cls._filetype: cls for cls in cls_list}
 
 
 def get_subclasses(cls: 'class'):

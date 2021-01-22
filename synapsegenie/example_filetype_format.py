@@ -128,7 +128,7 @@ class FileTypeFormat:
         '''
         errors = ""
         warnings = ""
-        logger.info(f"NO VALIDATION for {self._fileType} files")
+        logger.info(f"NO VALIDATION for {self._filetype} files")
         return errors, warnings
 
     def validate(self, filePathList, **kwargs):
