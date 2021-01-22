@@ -110,13 +110,13 @@ def validate_single_file_cli_wrapper(syn, args):
 def process_cli_wrapper(syn, args):
     """Process CLI wrapper"""
     process(syn, args.project_id, center=args.center,
-            pemfile=args.pemfile, delete_old=args.delete_old,
-            only_validate=args.only_validate, debug=args.debug,
+            delete_old=args.delete_old,
+            only_validate=args.only_validate,
             format_registry_packages=args.format_registry_packages)
 
 
-def process(syn, project_id, center=None, pemfile=None,
-            delete_old=False, only_validate=False, debug=False,
+def process(syn, project_id, center=None,
+            delete_old=False, only_validate=False,
             format_registry_packages=None):
     """Process files"""
     # Get the Synapse Project where data is stored
@@ -282,20 +282,12 @@ def build_parser():
                                            parents=[parent_parser])
     parser_process.add_argument('--center', help='The centers')
     parser_process.add_argument(
-        "--pemfile", type=str,
-        help="Path to PEM file (genie.pem)"
-    )
-    parser_process.add_argument(
         "--delete_old", action='store_true',
         help="Delete all old processed and temp files"
     )
     parser_process.add_argument(
         "--only_validate", action='store_true',
         help="Only validate the files, don't process"
-    )
-    parser_process.add_argument(
-        "--debug", action='store_true',
-        help="Add debug mode to synapse"
     )
     parser_process.set_defaults(func=process_cli_wrapper)
 
