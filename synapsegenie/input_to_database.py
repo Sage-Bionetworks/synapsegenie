@@ -614,7 +614,7 @@ def validation(syn, project_id, center, center_files,
 
 def center_input_to_database(syn, project_id, center,
                              only_validate, database_to_synid_mappingdf,
-                             center_mapping_df, delete_old=False,
+                             center_mapping_df,
                              format_registry=None, validator_cls=None):
     """Validate and process each center's input files"""
 

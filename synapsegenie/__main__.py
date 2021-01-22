@@ -110,15 +110,12 @@ def validate_single_file_cli_wrapper(syn, args):
 def process_cli_wrapper(syn, args):
     """Process CLI wrapper"""
     process(syn, args.project_id, center=args.center,
-            delete_old=args.delete_old,
             only_validate=args.only_validate,
             format_registry_packages=args.format_registry_packages)
 
 
 # TODO: Change 'center' parameter to 'groupby' and 'groupby_value'
-# TODO: remove `delete_old`. use: tempfile.mkdtemp(dir="./", prefix="...")
-def process(syn, project_id, center=None,
-            delete_old=False, only_validate=False,
+def process(syn, project_id, center=None, only_validate=False,
             format_registry_packages=None):
     """Process files"""
     # Getting configuration
@@ -179,7 +176,6 @@ def process(syn, project_id, center=None,
             only_validate=only_validate,
             database_to_synid_mappingdf=database_mappingdf,
             center_mapping_df=center_mapping_df,
-            delete_old=delete_old,
             format_registry=format_registry,
             validator_cls=validator_cls
         )
@@ -307,10 +303,6 @@ def build_parser():
     parser_process = subparsers.add_parser('process', help='Process files',
                                            parents=[parent_parser])
     parser_process.add_argument('--center', help='The centers')
-    parser_process.add_argument(
-        "--delete_old", action='store_true',
-        help="Delete all old processed and temp files"
-    )
     parser_process.add_argument(
         "--only_validate", action='store_true',
         help="Only validate the files, don't process"
