@@ -7,7 +7,7 @@ from synapseclient.core.exceptions import SynapseHTTPError
 logger = logging.getLogger(__name__)
 
 
-class ValidationHelper(object):
+class ValidationHelper:
     """Validation helper"""
     # Used for the kwargs in validate_single_file
     # Overload this per class
@@ -54,7 +54,7 @@ class ValidationHelper(object):
             )
             try:
                 filenames = [entity.name for entity in self.entitylist]
-                filetype = validator.validateFilename(filenames)
+                filetype = validator.validate_filetype(filenames)
             except AssertionError:
                 continue
             # If valid filename, return file type.

@@ -10,7 +10,7 @@ class FileTypeFormat:
 
     _process_kwargs = ["newPath", "databaseSynId"]
 
-    _fileType = "fileType"
+    _filetype = "fileType"
 
     _validation_kwargs = []
 
@@ -49,10 +49,9 @@ class FileTypeFormat:
         df = self._get_dataframe(filePathList)
         return df
 
-    def _validateFilename(self, filePath):
-        '''
-        Function that changes per file type for validating its filename
-        Expects an assertion error.
+    def _validate_filetype(self, filePath):
+        '''Validates the file type by user defined function.  A common mapping
+        is filename <-> filetype. Expects an assertion error.
 
         Args:
             filePath: Path to file
@@ -60,10 +59,9 @@ class FileTypeFormat:
         # assert True
         raise NotImplementedError
 
-    def validateFilename(self, filePath):
-        '''
-        Validation of file name.  The filename is what maps the file
-        to its validation and processing.
+    def validate_filetype(self, filePath):
+        '''Validation of file type, the filetype is only returned once
+        _validate_filetype passes.
 
         Args:
             filePath: Path to file
@@ -71,8 +69,8 @@ class FileTypeFormat:
         Returns:
             str: file type defined by self._fileType
         '''
-        self._validateFilename(filePath)
-        return self._fileType
+        self._validate_filetype(filePath)
+        return self._filetype
 
     def process_steps(self, df, **kwargs):
         '''
@@ -130,7 +128,7 @@ class FileTypeFormat:
         '''
         errors = ""
         warnings = ""
-        logger.info(f"NO VALIDATION for {self._fileType} files")
+        logger.info(f"NO VALIDATION for {self._filetype} files")
         return errors, warnings
 
     def validate(self, filePathList, **kwargs):
