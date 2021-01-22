@@ -4,6 +4,7 @@ import datetime
 import logging
 import os
 import shutil
+import tempfile
 from typing import List
 
 import synapseclient
@@ -249,7 +250,7 @@ def validatefile(syn, project_id, entities, validation_status_table,
     return input_status_list, invalid_errors_list, messages_to_send
 
 # TODO: Create ProcessHelper class
-def processfiles(syn, validfiles, center, path_to_genie,
+def processfiles(syn, validfiles, center, workdir,
                  center_mapping_df, databaseToSynIdMappingDf,
                  format_registry=None):
     """Processing validated files
@@ -259,23 +260,19 @@ def processfiles(syn, validfiles, center, path_to_genie,
         validfiles: pandas dataframe containing validated files
                     has 'id', 'path', and 'fileType' column
         center: GENIE center name
-        path_to_genie: Path to GENIE workdir
+        workdir: Path to workdir
         center_mapping_df: Center mapping dataframe
         databaseToSynIdMappingDf: Database to synapse id mapping dataframe
 
     """
     logger.info(f"PROCESSING {center} FILES: {len(validfiles)}")
-    center_staging_folder = os.path.join(path_to_genie, center)
     center_staging_synid = center_mapping_df.query(
         f"center == '{center}'").stagingSynId.iloc[0]
-
-    if not os.path.exists(center_staging_folder):
-        os.makedirs(center_staging_folder)
 
     for _, row in validfiles.iterrows():
         filetype = row['fileType']
         # filename = os.path.basename(filePath)
-        newpath = os.path.join(center_staging_folder, row['name'])
+        newpath = os.path.join(workdir, row['name'])
         # store = True
         tableid = databaseToSynIdMappingDf.Id[
             databaseToSynIdMappingDf['Database'] == filetype]
@@ -620,12 +617,21 @@ def center_input_to_database(syn, project_id, center,
                              center_mapping_df, delete_old=False,
                              format_registry=None, validator_cls=None):
     """Validate and process each center's input files"""
+
+    # path_to_genie = os.path.realpath(os.path.join(
+    #    process_functions.SCRIPT_DIR, "../"))
+    # Make the synapsecache dir the genie input folder for now
+    # The main reason for this is because the .synaspecache dir
+    # is mounted by batch
+    # TODO: Specify workdir parameter
+    path_to_genie = os.path.expanduser("~/.synapseCache")
+    workdir = tempfile.mkdtemp(dir=path_to_genie, prefix=f'{center}-')
+    # print(workdir.name)
+    # Set log handler
     if only_validate:
-        log_path = os.path.join(process_functions.SCRIPT_DIR,
-                                f"{center}_validation_log.txt")
+        log_path = os.path.join(workdir, f"{center}_validation_log.txt")
     else:
-        log_path = os.path.join(process_functions.SCRIPT_DIR,
-                                f"{center}_log.txt")
+        log_path = os.path.join(workdir, f"{center}_log.txt")
 
     log_formatter = logging.Formatter(
         "%(asctime)s [%(name)s][%(levelname)s] %(message)s"
@@ -633,30 +639,6 @@ def center_input_to_database(syn, project_id, center,
     file_handler = logging.FileHandler(log_path, mode='w')
     file_handler.setFormatter(log_formatter)
     logger.addHandler(file_handler)
-
-    # ----------------------------------------
-    # Start input to staging process
-    # ----------------------------------------
-
-    # path_to_genie = os.path.realpath(os.path.join(
-    #    process_functions.SCRIPT_DIR, "../"))
-    # Make the synapsecache dir the genie input folder for now
-    # The main reason for this is because the .synaspecache dir
-    # is mounted by batch
-
-    path_to_genie = os.path.expanduser("~/.synapseCache")
-    # Create input and staging folders
-    if not os.path.exists(os.path.join(path_to_genie, center, "input")):
-        os.makedirs(os.path.join(path_to_genie, center, "input"))
-    if not os.path.exists(os.path.join(path_to_genie, center, "staging")):
-        os.makedirs(os.path.join(path_to_genie, center, "staging"))
-
-    if delete_old:
-        # This command removes the directory and all the files in it
-        # So must recreate the directory
-        shutil.rmtree(os.path.join(path_to_genie, center),
-                      ignore_errors=True)
-        os.makedirs(os.path.join(path_to_genie, center))
 
     center_input_synid = center_mapping_df['inputSynId'][
         center_mapping_df['center'] == center][0]
@@ -699,7 +681,7 @@ def center_input_to_database(syn, project_id, center,
         #     syn.store(synapseclient.Table(
         #         processTrackerSynId, processTrackerDf))
 
-        processfiles(syn, validfiles, center, path_to_genie,
+        processfiles(syn, validfiles, center, workdir,
                      center_mapping_df,
                      database_to_synid_mappingdf,
                      format_registry=format_registry)
@@ -725,10 +707,12 @@ def center_input_to_database(syn, project_id, center,
             else "ONLY VALIDATION OCCURED FOR {}"
         logger.info(message_out.format(center))
 
+    logger.info("Processing Done")
+
     # Store log file
     log_folder_synid = process_functions.get_database_synid(
         syn, "logs", database_mappingdf=database_to_synid_mappingdf
     )
     syn.store(synapseclient.File(log_path, parentId=log_folder_synid))
-    os.remove(log_path)
+    shutil.rmtree(workdir, ignore_errors=True)
     logger.info("ALL PROCESSES COMPLETE")

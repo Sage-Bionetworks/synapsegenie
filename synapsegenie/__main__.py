@@ -115,44 +115,70 @@ def process_cli_wrapper(syn, args):
             format_registry_packages=args.format_registry_packages)
 
 
+# TODO: Change 'center' parameter to 'groupby' and 'groupby_value'
+# TODO: remove `delete_old`. use: tempfile.mkdtemp(dir="./", prefix="...")
 def process(syn, project_id, center=None,
             delete_old=False, only_validate=False,
             format_registry_packages=None):
     """Process files"""
+    # Getting configuration
     # Get the Synapse Project where data is stored
     # Should have annotations to find the table lookup
+    # TODO: This should also accept json file
     db_mapping_info = process_functions.get_dbmapping(syn, project_id)
     database_mappingdf = db_mapping_info['df']
+    # database configuration
+    db_configuration = db_mapping_info['mapping']
 
-    center_mapping_id = process_functions.get_database_synid(
-        syn, "centerMapping", database_mappingdf=database_mappingdf
-    )
+    # centerMapping is preferred for now
+    if db_configuration['centerMapping'] is not None:
+        center_mapping_id = db_configuration['centerMapping']
+        center_mapping = syn.tableQuery(f'SELECT * FROM {center_mapping_id}')
+        center_mapping_df = center_mapping.asDataFrame()
 
-    center_mapping = syn.tableQuery(f'SELECT * FROM {center_mapping_id}')
-    center_mapping_df = center_mapping.asDataFrame()
-
-    if center is not None:
-        assert center in center_mapping_df.center.tolist(), (
-            "Must specify one of these centers: {}".format(
-                ", ".join(center_mapping_df.center)))
-        centers = [center]
+        if center is not None:
+            assert center in center_mapping_df.center.tolist(), (
+                "Must specify one of these centers: {}".format(
+                    ", ".join(center_mapping_df.center)))
+            centers = [center]
+        else:
+            center_mapping_df = center_mapping_df[
+                ~center_mapping_df['inputSynId'].isnull()
+            ]
+            # release is a bool column
+            center_mapping_df = center_mapping_df[center_mapping_df['release']]
+            # Files of a specific group to download at a time
+            # In this case, each center's files
+            groupby_values = center_mapping_df.center
+    elif db_configuration['fileview'] is not None:
+        # do something
+        fileviewid = db_configuration['fileview']
+        groupby_value = None
+        groupby = "center"
+        values = syn.tableQuery(f"select distinct {groupby} from {fileviewid}")
+        valuesdf = values.asDataFrame()
+        groupby_values = valuesdf[groupby].tolist()
+        if groupby_value is not None:
+            groupby_values_str = ', '.join(groupby_values)
+            assert groupby_value in groupby_values, (
+                f"Must specify one of these {groupby}: {groupby_values_str}"
+            )
+            groupby_values = [groupby_value]
     else:
-        center_mapping_df = center_mapping_df[
-            ~center_mapping_df['inputSynId'].isnull()
-        ]
-        # release is a bool column
-        center_mapping_df = center_mapping_df[center_mapping_df['release']]
-        centers = center_mapping_df.center
+        raise ValueError(
+            "Configuration must have 'centerMapping' or 'fileview'"
+        )
 
     validator_cls = config.collect_validation_helper(format_registry_packages)
 
     format_registry = config.collect_format_types(format_registry_packages)
 
-    for process_center in centers:
+    for process_groupby_value in groupby_values:
         input_to_database.center_input_to_database(
-            syn, project_id, process_center,
-            only_validate, database_mappingdf,
-            center_mapping_df,
+            syn, project_id, center=process_groupby_value,
+            only_validate=only_validate,
+            database_to_synid_mappingdf=database_mappingdf,
+            center_mapping_df=center_mapping_df,
             delete_old=delete_old,
             format_registry=format_registry,
             validator_cls=validator_cls
