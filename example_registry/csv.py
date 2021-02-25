@@ -12,7 +12,7 @@ class Csv(FileTypeFormat):
 
     _filetype = "csv"
 
-    _process_kwargs = ["databaseSynId"]
+    _process_kwargs = ["newPath", "databaseSynId"]
 
     def _validate_filetype(self, filePath):
         assert os.path.basename(filePath[0]).endswith(".csv")
@@ -25,7 +25,7 @@ class Csv(FileTypeFormat):
     def process_steps(self, df, newPath, databaseSynId):
         df = self._process(df)
         process_functions.update_data(self.syn, databaseSynId, df, self.center,
-                                      toDelete=True)
+                                      toDelete=False, filterByColumn="center")
         df.to_csv(newPath, sep="\t", index=False)
         return newPath
 

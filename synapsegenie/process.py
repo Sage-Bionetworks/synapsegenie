@@ -136,7 +136,7 @@ class InputToDatabase:
         file_handler = logging.FileHandler(log_path, mode='w')
         file_handler.setFormatter(log_formatter)
         logger.addHandler(file_handler)
-        
+
         if groupby_value is not None:
             input_folder_synid = input_folder_mapping['inputSynId'][
                 groupby_value
@@ -204,14 +204,13 @@ class InputToDatabase:
             # filename = os.path.basename(filePath)
             newpath = os.path.join(workdir, row['name'])
             # store = True
-            tableid = self.db_configuration[filetype]
+            tableid = self.db_configuration.get(filetype)
             # tableid is a series, so much check actual length
             # Can't do `if tableid:`
-            if len(tableid) == 0:
-                tableid = None
-            else:
-                tableid = tableid[0]
-
+            # if len(tableid) == 0:
+            #     tableid = None
+            # else:
+            #     tableid = tableid[0]
             if filetype is not None:
                 processor = self.format_registry[filetype](self.syn, center)
                 processor.process(
