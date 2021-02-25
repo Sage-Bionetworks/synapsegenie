@@ -7,7 +7,7 @@ import logging
 
 import synapseclient
 
-from synapsegenie import (bootstrap, config, input_to_database,
+from synapsegenie import (bootstrap, config, input_to_database, process,
                           process_functions, validate, write_invalid_reasons)
 
 from .__version__ import __version__
@@ -109,14 +109,20 @@ def validate_single_file_cli_wrapper(syn, args):
 
 def process_cli_wrapper(syn, args):
     """Process CLI wrapper"""
-    process(syn, args.project_id, center=args.center,
-            only_validate=args.only_validate,
-            format_registry_packages=args.format_registry_packages)
+    # TODO: Put this in a helper function
+    if args.project_alias:
+        project_resp = syn.restGET(f"/entity/alias/{args.project_alias}")
+        project_id = project_resp['id']
+    else:
+        project_id = args.project_id
+    processing(syn, project_id, center=args.center,
+               only_validate=args.only_validate,
+               format_registry_packages=args.format_registry_packages)
 
 
 # TODO: Change 'center' parameter to 'groupby' and 'groupby_value'
-def process(syn, project_id, center=None, only_validate=False,
-            format_registry_packages=None):
+def processing(syn, project_id, center=None, only_validate=False,
+               format_registry_packages=None):
     """Process files"""
     # Getting configuration
     # Get the Synapse Project where data is stored
@@ -126,6 +132,9 @@ def process(syn, project_id, center=None, only_validate=False,
     database_mappingdf = db_mapping_info['df']
     # database configuration
     db_configuration = db_mapping_info['mapping']
+
+    # TODO: Don't pop this value.  This is only for testing purposes
+    db_configuration.pop('fileview')
 
     # centerMapping is preferred for now
     if db_configuration['centerMapping'] is not None:
@@ -169,16 +178,28 @@ def process(syn, project_id, center=None, only_validate=False,
     validator_cls = config.collect_validation_helper(format_registry_packages)
 
     format_registry = config.collect_format_types(format_registry_packages)
+    to_db_cls = process.InputToDatabase(syn=syn, project_id=project_id,
+                                        db_configuration=db_configuration,
+                                        format_registry=format_registry,
+                                        validator_cls=validator_cls)
+    # TODO: figure out if staging folder needs to be passed in
+    input_folder_map = center_mapping_df.set_index("center")
+    input_folder_mapping = input_folder_map.to_dict()
 
     for process_groupby_value in groupby_values:
-        input_to_database.center_input_to_database(
-            syn, project_id, center=process_groupby_value,
-            only_validate=only_validate,
-            database_to_synid_mappingdf=database_mappingdf,
-            center_mapping_df=center_mapping_df,
-            format_registry=format_registry,
-            validator_cls=validator_cls
-        )
+        # TODO: deal with when fileview is passed in...
+        to_db_cls.workflow(only_validate=only_validate,
+                           input_folder_mapping=input_folder_mapping,
+                           groupby_value=process_groupby_value)
+
+        # input_to_database.center_input_to_database(
+        #     syn, project_id, center=process_groupby_value,
+        #     only_validate=only_validate,
+        #     database_to_synid_mappingdf=database_mappingdf,
+        #     center_mapping_df=center_mapping_df,
+        #     format_registry=format_registry,
+        #     validator_cls=validator_cls
+        # )
 
     # error_tracker_synid = process_functions.get_database_synid(
     #     syn, "errorTracker", database_mappingdf=database_mappingdf
@@ -229,10 +250,16 @@ def build_parser():
         help="Python package name(s) to get valid file formats from "
              "(default: %(default)s)."
     )
+    project_group = parent_parser.add_mutually_exclusive_group(required=True)
 
-    parent_parser.add_argument(
-        "--project_id", type=str, required=True,
+    project_group.add_argument(
+        "--project_id", type=str,
         help='Synapse Project ID where data is stored.'
+    )
+
+    project_group.add_argument(
+        "--project_alias", type=str,
+        help='Synapse Project Alias where data is stored.'
     )
 
     subparsers = parser.add_subparsers(
