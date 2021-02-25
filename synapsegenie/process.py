@@ -153,14 +153,13 @@ class InputToDatabase:
             logger.info(f"{groupby_value} has no input files")
             return
 
-        # # validfiles is a dataframe
-        # if len(validfiles.index) and not only_validate:
-
-
-        #     processfiles(syn, validfiles, center, workdir,
-        #                 center_mapping_df,
-        #                 database_to_synid_mappingdf,
-        #                 format_registry=format_registry)
+        # validfiles is a dataframe
+        if len(validfiles.index) and not only_validate:
+            self.processfiles(
+                validfiles=validfiles,
+                center=groupby_value, workdir=workdir,
+                center_mapping_df=input_folder_mapping
+            )
 
 
         # else:
@@ -178,6 +177,51 @@ class InputToDatabase:
         # syn.store(synapseclient.File(log_path, parentId=log_folder_synid))
         # shutil.rmtree(workdir, ignore_errors=True)
         logger.info("ALL PROCESSES COMPLETE")
+
+    # TODO: Create ProcessHelper class
+    def processfiles(self, validfiles, center, workdir,
+                     center_mapping_df):
+        """Processing validated files
+
+        Args:
+            syn: Synapse object
+            validfiles: pandas dataframe containing validated files
+                        has 'id', 'path', and 'fileType' column
+            center: GENIE center name
+            workdir: Path to workdir
+            center_mapping_df: Center mapping dataframe
+            databaseToSynIdMappingDf: Database to synapse id mapping dataframe
+
+        """
+        logger.info(f"PROCESSING {center} FILES: {len(validfiles)}")
+        # center_staging_synid = center_mapping_df.query(
+        #     f"center == '{center}'").stagingSynId.iloc[0]
+        # TODO: Remove or add in staging folder
+        center_staging_synid = None
+
+        for _, row in validfiles.iterrows():
+            filetype = row['fileType']
+            # filename = os.path.basename(filePath)
+            newpath = os.path.join(workdir, row['name'])
+            # store = True
+            tableid = self.db_configuration[filetype]
+            # tableid is a series, so much check actual length
+            # Can't do `if tableid:`
+            if len(tableid) == 0:
+                tableid = None
+            else:
+                tableid = tableid[0]
+
+            if filetype is not None:
+                processor = self.format_registry[filetype](self.syn, center)
+                processor.process(
+                    filePath=row['path'], newPath=newpath,
+                    parentId=center_staging_synid, databaseSynId=tableid,
+                    fileSynId=row['id'],
+                    databaseToSynIdMappingDf=self.db_configuration
+                )
+
+        logger.info("ALL DATA STORED IN DATABASE")
 
     def validation(self, center, center_files, groupby='center'):
         '''

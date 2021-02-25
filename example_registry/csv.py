@@ -1,7 +1,6 @@
 import logging
 import os
-
-import synapseclient
+from io import StringIO
 
 from synapsegenie.example_filetype_format import FileTypeFormat
 from synapsegenie import process_functions
@@ -19,7 +18,8 @@ class Csv(FileTypeFormat):
         assert os.path.basename(filePath[0]).endswith(".csv")
 
     def _process(self, df):
-        df.columns = [df.upper() for col in df.columns]
+        # df.columns = [df.upper() for col in df.columns]
+        df['center'] = self.center
         return df
 
     def process_steps(self, df, newPath, databaseSynId):
@@ -30,8 +30,18 @@ class Csv(FileTypeFormat):
         return newPath
 
     def _validate(self, df):
-        total_error = ""
-        warning = ""
+        total_error = StringIO()
+        warning = StringIO()
         if df.empty:
-            total_error += "{}: File must not be empty".format(self._filetype)
-        return total_error, warning
+            total_error.write(f"{self._filetype}: Must not be empty\n")
+        if df.get("valid") is not None:
+            if df['valid'][0] != "VALID":
+                total_error.write(
+                    f"{self._filetype}: 'valid' column must be 'VALID'\n"
+                )
+        else:
+            total_error.write(
+                f"{self._filetype}: Must have 'valid' column\n"
+            )
+
+        return total_error.getvalue(), warning.getvalue()

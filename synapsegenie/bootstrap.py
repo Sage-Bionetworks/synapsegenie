@@ -167,8 +167,9 @@ def main(syn, project, format_registry=None, centers=None):
     for folder in center_folders:
         for _ in range(n_files):
             tmp = tempfile.NamedTemporaryFile(prefix=f'TEST-{folder.name}',
-                                              suffix='.txt')
+                                              suffix='.csv')
             with open(tmp.name, mode='w') as file_h:
+                file_h.write("valid")
                 file_h.write(random.choice(['ERROR', 'VALID', 'NOPE']))
             syn.store(synapseclient.File(tmp.name, parent=folder))
 
