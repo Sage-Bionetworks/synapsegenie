@@ -483,8 +483,12 @@ def get_dbmapping(syn: Synapse, project_id: str) -> dict:
     database_mappingdf = get_syntabledf(
         syn, f'select * from {dbmapping_synid}'
     )
+    new_mapping = database_mappingdf.set_index("Database")
+    mapping_dict = new_mapping.to_dict()
+    # TODO: Eventually remove 'df'
     return {'synid': dbmapping_synid,
-            'df': database_mappingdf}
+            'df': database_mappingdf,
+            'mapping': mapping_dict['Id']}
 
 
 def create_new_fileformat_table(syn: Synapse,
