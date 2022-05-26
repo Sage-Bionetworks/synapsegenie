@@ -59,6 +59,6 @@ Tests are also run automatically by Github Actions on any pull request and are r
 ### Release Procedure (For Package Maintainers)
 
 * Always merge all new features into `develop` branch first (unless it is a minor patch into `master`)
-* update `synapsegenie/__version__.py` to not have `-dev`
+* update `__version__` variable in `synapsegenie/__init__.py` to not have `-dev`
 * Merge develop into master branch
 * Create release tag (`v...`) and include release notes.  Also include any known bugs for each release here.
