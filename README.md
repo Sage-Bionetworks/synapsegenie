@@ -57,7 +57,7 @@ synapsegenie process -h
 
 # only validate
 synapsegenie process --format_registry_packages example_registry \
-                     --project_id syn22337078
+                     --project_id syn22337078 \
                      --only_validate
 
 # validate + process
