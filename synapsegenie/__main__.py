@@ -7,7 +7,7 @@ import logging
 
 import synapseclient
 
-from synapsegenie import (bootstrap, config, input_to_database,
+from synapsegenie import (bootstrap, config, input_to_database, process,
                           process_functions, validate, write_invalid_reasons)
 
 from .__version__ import __version__
@@ -109,54 +109,106 @@ def validate_single_file_cli_wrapper(syn, args):
 
 def process_cli_wrapper(syn, args):
     """Process CLI wrapper"""
-    process(syn, args.project_id, center=args.center,
-            pemfile=args.pemfile, delete_old=args.delete_old,
-            only_validate=args.only_validate, debug=args.debug,
-            format_registry_packages=args.format_registry_packages)
+    # TODO: Put this in a helper function
+    if args.project_alias:
+        project_resp = syn.restGET(f"/entity/alias/{args.project_alias}")
+        project_id = project_resp['id']
+    else:
+        project_id = args.project_id
+    processing(syn, project_id, center=args.center,
+               only_validate=args.only_validate,
+               format_registry_packages=args.format_registry_packages)
 
 
-def process(syn, project_id, center=None, pemfile=None,
-            delete_old=False, only_validate=False, debug=False,
-            format_registry_packages=None):
+# TODO: Change 'center' parameter to 'groupby' and 'groupby_value'
+def processing(syn, project_id, center=None, only_validate=False,
+               format_registry_packages=None):
     """Process files"""
+    # Getting configuration
     # Get the Synapse Project where data is stored
     # Should have annotations to find the table lookup
+    # TODO: This should also accept json file
     db_mapping_info = process_functions.get_dbmapping(syn, project_id)
-    database_mappingdf = db_mapping_info['df']
+    # database_mappingdf = db_mapping_info['df']
+    # database configuration
+    db_configuration = db_mapping_info['mapping']
+    # TODO: Don't pop this value.  This is only for testing purposes
+    # db_configuration.pop('fileview')
+    # db_configuration['centerMapping'] = None
 
-    center_mapping_id = process_functions.get_database_synid(
-        syn, "centerMapping", database_mappingdf=database_mappingdf
-    )
-
-    center_mapping = syn.tableQuery(f'SELECT * FROM {center_mapping_id}')
-    center_mapping_df = center_mapping.asDataFrame()
-
-    if center is not None:
-        assert center in center_mapping_df.center.tolist(), (
-            "Must specify one of these centers: {}".format(
-                ", ".join(center_mapping_df.center)))
-        centers = [center]
-    else:
+    # centerMapping is preferred for now
+    if db_configuration['centerMapping'] is not None:
+        center_mapping_id = db_configuration['centerMapping']
+        center_mapping = syn.tableQuery(f'SELECT * FROM {center_mapping_id}')
+        center_mapping_df = center_mapping.asDataFrame()
         center_mapping_df = center_mapping_df[
             ~center_mapping_df['inputSynId'].isnull()
         ]
         # release is a bool column
         center_mapping_df = center_mapping_df[center_mapping_df['release']]
-        centers = center_mapping_df.center
+        # Files of a specific group to download at a time
+        # In this case, each center's files
+        groupby_values = center_mapping_df.center
+        # TODO: figure out if staging folder needs to be passed in
+        input_folder_map = center_mapping_df.set_index("center")
+        input_folder_mapping = input_folder_map.to_dict()
+        if center is not None:
+            # Check that the center specified is part of the center configurations
+            if center not in input_folder_mapping['inputSynId']:
+                raise ValueError(
+                    "Must specify one of these centers: {}".format(
+                        ", ".join(input_folder_mapping['inputSynId'])
+                    )
+                )
+            # Remove centers that aren't part of specified center
+            for each_center in input_folder_mapping['inputSynId']:
+                if center != each_center:
+                    del input_folder_mapping['inputSynId'][each_center]
+
+    elif db_configuration['fileview'] is not None:
+        # do something
+        fileviewid = db_configuration['fileview']
+        groupby_value = None
+        groupby = "center"
+        values = syn.tableQuery(f"select distinct {groupby} from {fileviewid}")
+        valuesdf = values.asDataFrame()
+        groupby_values = valuesdf[groupby].tolist()
+        if groupby_value is not None:
+            groupby_values_str = ', '.join(groupby_values)
+            assert groupby_value in groupby_values, (
+                f"Must specify one of these {groupby}: {groupby_values_str}"
+            )
+            groupby_values = [groupby_value]
+        # There is no need for input_folder_mapping when the configuration is a fileview
+        input_folder_mapping = None
+    else:
+        raise ValueError(
+            "Configuration must have 'centerMapping' or 'fileview'"
+        )
 
     validator_cls = config.collect_validation_helper(format_registry_packages)
 
     format_registry = config.collect_format_types(format_registry_packages)
+    to_db_cls = process.InputToDatabase(syn=syn, project_id=project_id,
+                                        db_configuration=db_configuration,
+                                        format_registry=format_registry,
+                                        validator_cls=validator_cls)
 
-    for process_center in centers:
-        input_to_database.center_input_to_database(
-            syn, project_id, process_center,
-            only_validate, database_mappingdf,
-            center_mapping_df,
-            delete_old=delete_old,
-            format_registry=format_registry,
-            validator_cls=validator_cls
-        )
+    for process_groupby_value in groupby_values:
+        # TODO: deal with when fileview is passed in... `input_folder_map`
+        # is derived from the center mappings dataframe
+        to_db_cls.workflow(only_validate=only_validate,
+                           input_folder_mapping=input_folder_mapping,
+                           groupby_value=process_groupby_value)
+
+        # input_to_database.center_input_to_database(
+        #     syn, project_id, center=process_groupby_value,
+        #     only_validate=only_validate,
+        #     database_to_synid_mappingdf=database_mappingdf,
+        #     center_mapping_df=center_mapping_df,
+        #     format_registry=format_registry,
+        #     validator_cls=validator_cls
+        # )
 
     # error_tracker_synid = process_functions.get_database_synid(
     #     syn, "errorTracker", database_mappingdf=database_mappingdf
@@ -207,10 +259,16 @@ def build_parser():
         help="Python package name(s) to get valid file formats from "
              "(default: %(default)s)."
     )
+    project_group = parent_parser.add_mutually_exclusive_group(required=True)
 
-    parent_parser.add_argument(
-        "--project_id", type=str, required=True,
+    project_group.add_argument(
+        "--project_id", type=str,
         help='Synapse Project ID where data is stored.'
+    )
+
+    project_group.add_argument(
+        "--project_alias", type=str,
+        help='Synapse Project Alias where data is stored.'
     )
 
     subparsers = parser.add_subparsers(
@@ -282,20 +340,8 @@ def build_parser():
                                            parents=[parent_parser])
     parser_process.add_argument('--center', help='The centers')
     parser_process.add_argument(
-        "--pemfile", type=str,
-        help="Path to PEM file (genie.pem)"
-    )
-    parser_process.add_argument(
-        "--delete_old", action='store_true',
-        help="Delete all old processed and temp files"
-    )
-    parser_process.add_argument(
         "--only_validate", action='store_true',
         help="Only validate the files, don't process"
-    )
-    parser_process.add_argument(
-        "--debug", action='store_true',
-        help="Add debug mode to synapse"
     )
     parser_process.set_defaults(func=process_cli_wrapper)
 
