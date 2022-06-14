@@ -7,7 +7,7 @@ This package can deploy a AACR GENIE like project on Synapse and perform validat
 ## Installation
 
 Dependencies:
-- Python 3.6 or higher
+- Python 3.7 or higher
 - [synapseclient](http://python-docs.synapse.org) (`pip install synapseclient`)
 - Python [pandas](http://pandas.pydata.org) (`pip install pandas`)
 
