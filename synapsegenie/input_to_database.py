@@ -565,7 +565,8 @@ def validation(syn, project_id, center, center_files,
             center=center,
             format_registry=format_registry,
             validator_cls=validator_cls)
-
+        # TODO: remove return as a tuple of list of dicts so no need
+        # to extend soon.
         input_valid_statuses.extend(status)
         if errors is not None:
             invalid_errors.extend(errors)
