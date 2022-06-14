@@ -36,11 +36,10 @@ def entity_date_to_timestamp(entity_date_time):
                                                "%Y-%m-%dT%H:%M:%S")
     return to_unix_epoch_time(date_time_obj)
 
-
+# TODO: rename function
 def get_center_input_files(
         syn: synapseclient.Synapse,
         synid: str,
-        center: str,
         downloadFile: bool = True
     ) -> List[synapseclient.Entity]:
     """Walks through each center's input directory to get a
@@ -49,15 +48,11 @@ def get_center_input_files(
     Args:
         syn: Synapse object
         synid: Center input folder synid
-        center: Center name
         downloadFile: To download files. Default is True.
 
     Returns:
         list: List of Synapse Entities per center.
     """
-    # TODO: can probably remove the center parameter and move the
-    # print statement out of this function.
-    logger.info(f"GETTING {center} INPUT FILES")
     center_files = synapseutils.walk(syn, synid)
     prepared_center_file_list = []
 
@@ -665,7 +660,10 @@ def center_input_to_database(syn, project_id, center,
     center_input_synid = center_mapping_df['inputSynId'][
         center_mapping_df['center'] == center][0]
     logger.info(f"Center: {center}")
-    center_files = get_center_input_files(syn, center_input_synid, center)
+    # TODO: can probably remove the center parameter and move the
+    # print statement out of this function.
+    logger.info(f"GETTING {center} INPUT FILES")
+    center_files = get_center_input_files(syn, center_input_synid)
 
     # only validate if there are center files
     if center_files:

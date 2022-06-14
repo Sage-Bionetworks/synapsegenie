@@ -141,7 +141,7 @@ def test_get_center_input_files():
          patch.object(syn, "get",
                       side_effect=syn_get_effects) as patch_syn_get:
         center_file_list = input_to_database.get_center_input_files(
-            syn, "syn12345", center,
+            syn, "syn12345"
         )
         assert len(center_file_list) == len(expected_center_file_list)
         assert center_file_list == expected_center_file_list
@@ -156,8 +156,7 @@ def test_empty_get_center_input_files():
     '''
     with patch.object(synapseutils, "walk",
                       return_value=walk_return_empty()) as patch_synapseutils_walk:
-        center_file_list = input_to_database.get_center_input_files(
-            syn, "syn12345", center)
+        center_file_list = input_to_database.get_center_input_files(syn, "syn12345")
         assert center_file_list == []
         patch_synapseutils_walk.assert_called_once_with(syn, 'syn12345')
 
