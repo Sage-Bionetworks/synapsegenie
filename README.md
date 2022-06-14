@@ -50,7 +50,7 @@ synapsegenie /path/to/file center_name \
 ```
 
 ### Validation/Processing
-`synapsegenie` will validate and process all the files uploaded by centers.  Every valid file will be processed and uploaded into Synapse tables.
+`synapsegenie` will validate and process all the files uploaded by centers.  Every valid file will be processed and uploaded into Synapse tables. [syn22337078](https://www.synapse.org/#!Synapse:syn22337078) is a test project.
 
 ```
 synapsegenie process -h
