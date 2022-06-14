@@ -660,9 +660,8 @@ def center_input_to_database(syn, project_id, center,
     center_input_synid = center_mapping_df['inputSynId'][
         center_mapping_df['center'] == center][0]
     logger.info(f"Center: {center}")
-    # TODO: can probably remove the center parameter and move the
-    # print statement out of this function.
     logger.info(f"GETTING {center} INPUT FILES")
+    # TODO: Rename function
     center_files = get_center_input_files(syn, center_input_synid)
 
     # only validate if there are center files
