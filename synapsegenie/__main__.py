@@ -129,33 +129,42 @@ def processing(syn, project_id, center=None, only_validate=False,
     # Should have annotations to find the table lookup
     # TODO: This should also accept json file
     db_mapping_info = process_functions.get_dbmapping(syn, project_id)
-    database_mappingdf = db_mapping_info['df']
+    # database_mappingdf = db_mapping_info['df']
     # database configuration
     db_configuration = db_mapping_info['mapping']
-
     # TODO: Don't pop this value.  This is only for testing purposes
-    db_configuration.pop('fileview')
+    # db_configuration.pop('fileview')
+    # db_configuration['centerMapping'] = None
 
     # centerMapping is preferred for now
     if db_configuration['centerMapping'] is not None:
         center_mapping_id = db_configuration['centerMapping']
         center_mapping = syn.tableQuery(f'SELECT * FROM {center_mapping_id}')
         center_mapping_df = center_mapping.asDataFrame()
-
+        center_mapping_df = center_mapping_df[
+            ~center_mapping_df['inputSynId'].isnull()
+        ]
+        # release is a bool column
+        center_mapping_df = center_mapping_df[center_mapping_df['release']]
+        # Files of a specific group to download at a time
+        # In this case, each center's files
+        groupby_values = center_mapping_df.center
+        # TODO: figure out if staging folder needs to be passed in
+        input_folder_map = center_mapping_df.set_index("center")
+        input_folder_mapping = input_folder_map.to_dict()
         if center is not None:
-            assert center in center_mapping_df.center.tolist(), (
-                "Must specify one of these centers: {}".format(
-                    ", ".join(center_mapping_df.center)))
-            centers = [center]
-        else:
-            center_mapping_df = center_mapping_df[
-                ~center_mapping_df['inputSynId'].isnull()
-            ]
-            # release is a bool column
-            center_mapping_df = center_mapping_df[center_mapping_df['release']]
-            # Files of a specific group to download at a time
-            # In this case, each center's files
-            groupby_values = center_mapping_df.center
+            # Check that the center specified is part of the center configurations
+            if center not in input_folder_mapping['inputSynId']:
+                raise ValueError(
+                    "Must specify one of these centers: {}".format(
+                        ", ".join(input_folder_mapping['inputSynId'])
+                    )
+                )
+            # Remove centers that aren't part of specified center
+            for each_center in input_folder_mapping['inputSynId']:
+                if center != each_center:
+                    del input_folder_mapping['inputSynId'][each_center]
+
     elif db_configuration['fileview'] is not None:
         # do something
         fileviewid = db_configuration['fileview']
@@ -170,6 +179,8 @@ def processing(syn, project_id, center=None, only_validate=False,
                 f"Must specify one of these {groupby}: {groupby_values_str}"
             )
             groupby_values = [groupby_value]
+        # There is no need for input_folder_mapping when the configuration is a fileview
+        input_folder_mapping = None
     else:
         raise ValueError(
             "Configuration must have 'centerMapping' or 'fileview'"
@@ -182,12 +193,10 @@ def processing(syn, project_id, center=None, only_validate=False,
                                         db_configuration=db_configuration,
                                         format_registry=format_registry,
                                         validator_cls=validator_cls)
-    # TODO: figure out if staging folder needs to be passed in
-    input_folder_map = center_mapping_df.set_index("center")
-    input_folder_mapping = input_folder_map.to_dict()
 
     for process_groupby_value in groupby_values:
-        # TODO: deal with when fileview is passed in...
+        # TODO: deal with when fileview is passed in... `input_folder_map`
+        # is derived from the center mappings dataframe
         to_db_cls.workflow(only_validate=only_validate,
                            input_folder_mapping=input_folder_mapping,
                            groupby_value=process_groupby_value)
