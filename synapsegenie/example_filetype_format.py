@@ -18,7 +18,7 @@ class FileTypeFormat:
         self.syn = syn
         self.center = center
 
-    def _get_dataframe(self, filePathList):
+    def _get_dataframe(self, filePath):
         '''
         This function by defaults assumes the filePathList is length of 1
         and is a tsv file.  Could change depending on file type.
@@ -30,11 +30,10 @@ class FileTypeFormat:
         Returns:
             df: Pandas dataframe of file
         '''
-        filePath = filePathList[0]
         df = pd.read_csv(filePath, sep="\t", comment="#")
         return df
 
-    def read_file(self, filePathList):
+    def read_file(self, filePath):
         '''
         Each file is to be read in for validation and processing.
         This is not to be changed in any functions.
@@ -46,7 +45,7 @@ class FileTypeFormat:
         Returns:
             df: Pandas dataframe of file
         '''
-        df = self._get_dataframe(filePathList)
+        df = self._get_dataframe(filePath)
         return df
 
     def _validate_filetype(self, filePath):
@@ -131,13 +130,13 @@ class FileTypeFormat:
         logger.info(f"NO VALIDATION for {self._filetype} files")
         return errors, warnings
 
-    def validate(self, filePathList, **kwargs):
+    def validate(self, filePath, **kwargs):
         '''
         This is the main validation function.
         Every file type calls self._validate, which is different.
 
         Args:
-            filePathList: A list of file paths.
+            filePath: A list of file paths.
             kwargs: The kwargs are determined by self._validation_kwargs
 
         Returns:
@@ -152,16 +151,14 @@ class FileTypeFormat:
         errors = ""
 
         try:
-            df = self.read_file(filePathList)
+            df = self.read_file(filePath)
         except Exception as e:
-            errors = (f"The file(s) ({filePathList}) cannot be read. "
+            errors = (f"The file(s) ({filePath}) cannot be read. "
                       f"Original error: {str(e)}")
             warnings = ""
 
         if not errors:
-            logger.info("VALIDATING {}".format(
-                os.path.basename(",".join(filePathList))
-            ))
+            logger.info(f"VALIDATING {os.path.basename(filePath)}")
             errors, warnings = self._validate(df, **mykwargs)
         # File is valid if error string is blank
         valid = (errors == '')

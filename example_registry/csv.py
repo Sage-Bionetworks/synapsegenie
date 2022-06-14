@@ -16,7 +16,7 @@ class Csv(FileTypeFormat):
     _process_kwargs = ["databaseSynId"]
 
     def _validate_filetype(self, filePath):
-        assert os.path.basename(filePath[0]).endswith(".csv")
+        assert os.path.basename(filePath).endswith(".csv")
 
     def _process(self, df):
         df.columns = [df.upper() for col in df.columns]

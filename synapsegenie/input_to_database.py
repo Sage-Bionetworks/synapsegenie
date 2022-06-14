@@ -37,19 +37,26 @@ def entity_date_to_timestamp(entity_date_time):
     return to_unix_epoch_time(date_time_obj)
 
 
-def get_center_input_files(syn, synid, center, downloadFile=True):
-    """This function walks through each center's input directory
-    to get a list of tuples of center files
+def get_center_input_files(
+        syn: synapseclient.Synapse,
+        synid: str,
+        center: str,
+        downloadFile: bool = True
+    ) -> List[synapseclient.Entity]:
+    """Walks through each center's input directory to get a
+    list entities per center.
 
     Args:
         syn: Synapse object
         synid: Center input folder synid
         center: Center name
+        downloadFile: To download files. Default is True.
 
     Returns:
-        List of entities with the correct format to pass into validation
-
+        list: List of Synapse Entities per center.
     """
+    # TODO: can probably remove the center parameter and move the
+    # print statement out of this function.
     logger.info(f"GETTING {center} INPUT FILES")
     center_files = synapseutils.walk(syn, synid)
     prepared_center_file_list = []
@@ -57,13 +64,13 @@ def get_center_input_files(syn, synid, center, downloadFile=True):
     for _, _, entities in center_files:
         for name, ent_synid in entities:
             ent = syn.get(ent_synid, downloadFile=downloadFile)
-            prepared_center_file_list.append([ent])
+            prepared_center_file_list.append(ent)
 
     return prepared_center_file_list
 
 
 def check_existing_file_status(validation_status_table, error_tracker_table,
-                               entities):
+                               entity):
     '''
     This function checks input files against the existing validation and error
     tracking dataframe
@@ -80,47 +87,44 @@ def check_existing_file_status(validation_status_table, error_tracker_table,
             to_validate: Boolean value for whether of not an input
                          file needs to be validated
     '''
-    if len(entities) > 2:
-        raise ValueError(
-            "There should never be more than 2 files being validated.")
-
-    statuses = []
-    errors = []
+    # if len(entity) > 2:
+    #     raise ValueError(
+    #         "There should never be more than 2 files being validated.")
 
     validation_statusdf = validation_status_table.asDataFrame()
     error_trackerdf = error_tracker_table.asDataFrame()
     # This should be outside fo the forloop so that it doesn't
     # get reset
     to_validate = False
-    for ent in entities:
-        # Get the current status and errors from the tables.
-        current_status = validation_statusdf[validation_statusdf['id'] == ent.id]
-        current_error = error_trackerdf[error_trackerdf['id'] == ent.id]
-
-        if current_status.empty:
+    #for ent in entities:
+    # Get the current status and errors from the tables.
+    current_status = validation_statusdf[validation_statusdf['id'] == entity.id]
+    current_error = error_trackerdf[error_trackerdf['id'] == entity.id]
+    status = ""
+    error = ""
+    if current_status.empty:
+        to_validate = True
+    else:
+        # This to_validate is here, because the following is a
+        # sequential check of whether files need to be validated
+        status = current_status['status'].values[0]
+        if current_error.empty:
+            to_validate = current_status['status'].values[0] == "INVALID"
+        else:
+            error = current_error['errors'].values[0]
+        # Add Name check here (must add name of the entity as a column)
+        if (current_status['md5'].values[0] != entity.md5 or
+            current_status['name'].values[0] != entity.name):
             to_validate = True
         else:
-            # This to_validate is here, because the following is a
-            # sequential check of whether files need to be validated
-            statuses.append(current_status['status'].values[0])
-            if current_error.empty:
-                to_validate = \
-                    current_status['status'].values[0] == "INVALID"
-            else:
-                errors.append(current_error['errors'].values[0])
-            # Add Name check here (must add name of the entity as a column)
-            if current_status['md5'].values[0] != ent.md5 or \
-               current_status['name'].values[0] != ent.name:
-                to_validate = True
-            else:
-                status_str = "{filename} ({id}) FILE STATUS IS: {filestatus}"
-                logger.info(status_str.format(
-                    filename=ent.name, id=ent.id,
-                    filestatus=current_status['status'].values[0])
-                )
-
-    return({'status_list': statuses,
-            'error_list': errors,
+            status_str = "{filename} ({id}) FILE STATUS IS: {filestatus}"
+            logger.info(status_str.format(
+                filename=entity.name, id=entity.id,
+                filestatus=current_status['status'].values[0])
+            )
+    # TODO: Update these keys
+    return({'status_list': status,
+            'error_list': error,
             'to_validate': to_validate})
 
 
@@ -153,7 +157,7 @@ def _send_validation_error_email(syn, user, message_objs):
                     messageBody=email_message)
 
 
-def _get_status_and_error_list(valid, message, entities):
+def _get_status_and_error_list(valid, message, entity):
     '''
     Helper function to return the status and error list of the
     files based on validation result.
@@ -161,25 +165,22 @@ def _get_status_and_error_list(valid, message, entities):
     Args:
         valid: Boolean value of results of validation
         message: Validation message
-        entities: List of Synapse Entities
+        entity: Synapse Entity
 
     Returns:
         tuple: input_status_list - status of input files list,
                invalid_errors_list - error list
     '''
     if valid:
-        input_status_list = [{'entity': ent, 'status': "VALIDATED"}
-                             for ent in entities]
+        input_status_list = [{'entity': entity, 'status': "VALIDATED"}]
         invalid_errors_list = []
     else:
-        input_status_list = [{'entity': ent, 'status': "INVALID"}
-                             for ent in entities]
-        invalid_errors_list = [{'entity': ent, 'errors': message}
-                               for ent in entities]
+        input_status_list = [{'entity': entity, 'status': "INVALID"}]
+        invalid_errors_list = [{'entity': entity, 'errors': message}]
     return input_status_list, invalid_errors_list
 
 
-def validatefile(syn, project_id, entities, validation_status_table,
+def validatefile(syn, project_id, entity, validation_status_table,
                  error_tracker_table, center, format_registry=None,
                  validator_cls=None):
     '''Validate a list of entities.
@@ -188,8 +189,7 @@ def validatefile(syn, project_id, entities, validation_status_table,
 
     Args:
         syn: Synapse object
-        entities: A list of entities for a single file 'type'
-                  (usually a single file, but clinical can have two)
+        entity: An entities for a single file 'type'
         validation_statusdf: Validation status dataframe
         error_trackerdf: Invalid files error tracking dataframe
         center: Center of interest
@@ -201,15 +201,15 @@ def validatefile(syn, project_id, entities, validation_status_table,
 
     '''
 
-    filepaths = [entity.path for entity in entities]
-    filenames = [entity.name for entity in entities]
+    filepath = entity.path
+    filename = entity.name
 
-    logger.info(f"VALIDATING {', '.join(filenames)}")
+    logger.info(f"VALIDATING {filename}")
 
-    file_users = [entities[0].modifiedBy, entities[0].createdBy]
+    file_users = [entity.modifiedBy, entity.createdBy]
 
     check_file_status = check_existing_file_status(
-        validation_status_table, error_tracker_table, entities
+        validation_status_table, error_tracker_table, entity
     )
 
     status_list = check_file_status['status_list']
@@ -222,23 +222,21 @@ def validatefile(syn, project_id, entities, validation_status_table,
     # name Not by actual path of file
     validator = validator_cls(syn=syn, project_id=project_id,
                               center=center,
-                              entitylist=entities,
+                              entity=entity,
                               format_registry=format_registry)
     filetype = validator.file_type
     if check_file_status['to_validate']:
         valid, message = validator.validate_single_file()
         logger.info("VALIDATION COMPLETE")
         input_status_list, invalid_errors_list = _get_status_and_error_list(
-            valid, message, entities
+            valid, message, entity
         )
         # Send email the first time the file is invalid
         if invalid_errors_list:
-            messages_to_send.append((filenames, message, file_users))
+            messages_to_send.append((filename, message, file_users))
     else:
-        input_status_list = [{'entity': entity, 'status': status}
-                             for entity, status in zip(entities, status_list)]
-        invalid_errors_list = [{'entity': entity, 'errors': errors}
-                               for entity, errors in zip(entities, error_list)]
+        input_status_list = [{'entity': entity, 'status': status_list}]
+        invalid_errors_list = [{'entity': entity, 'errors': error_list}]
     # add in static filetype and center information
     for input_status in input_status_list:
         input_status.update({'fileType': filetype, 'center': center})
@@ -559,12 +557,11 @@ def validation(syn, project_id, center, center_files,
     # This default dict will capture all the error messages to send to
     # particular users
     user_message_dict = defaultdict(list)
-
-    for ents in center_files:
+    for entity in center_files:
         status, errors, messages_to_send = validatefile(
-            syn, project_id, ents,
-            validation_status_table,
-            error_tracker_table,
+            syn=syn, project_id=project_id, entity=entity,
+            validation_status_table=validation_status_table,
+            error_tracker_table=error_tracker_table,
             center=center,
             format_registry=format_registry,
             validator_cls=validator_cls)

@@ -13,7 +13,7 @@ class ValidationHelper:
     # Overload this per class
     _validate_kwargs = []
 
-    def __init__(self, syn, project_id, center, entitylist,
+    def __init__(self, syn, project_id, center, entity,
                  format_registry=None, file_type=None):
         """A validator helper class for a center's files.
 
@@ -29,7 +29,7 @@ class ValidationHelper:
         """
         self._synapse_client = syn
         self._project = syn.get(project_id)
-        self.entitylist = entitylist
+        self.entity = entity
         self.center = center
         self._format_registry = format_registry
         self.file_type = (self.determine_filetype()
@@ -53,8 +53,8 @@ class ValidationHelper:
                 self._synapse_client, self.center
             )
             try:
-                filenames = [entity.name for entity in self.entitylist]
-                filetype = validator.validate_filetype(filenames)
+                filename = self.entity.name
+                filetype = validator.validate_filetype(filename)
             except AssertionError:
                 continue
             # If valid filename, return file type.
@@ -86,9 +86,9 @@ class ValidationHelper:
 
             validator_cls = self._format_registry[self.file_type]
             validator = validator_cls(self._synapse_client, self.center)
-            filepathlist = [entity.path for entity in self.entitylist]
+            # filepathlist = [entity.path for entity in self.entitylist]
             valid, errors, warnings = validator.validate(
-                filePathList=filepathlist, **mykwargs
+                filePath=self.entity.path, **mykwargs
             )
 
         # Complete error message
