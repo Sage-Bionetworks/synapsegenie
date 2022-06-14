@@ -130,7 +130,7 @@ def test_valid_validate_single_file():
 
         mock_determine_ftype.assert_called_once_with()
 
-        mock_genie_class.assert_called_once_with(filePath=CLIN_ENT.path)
+        mock_genie_class.assert_called_once_with(entity=CLIN_ENT)
 
         mock_determine.assert_called_once_with(error_string, warning_string)
 
