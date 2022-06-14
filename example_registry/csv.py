@@ -13,7 +13,7 @@ class Csv(FileTypeFormat):
 
     _filetype = "csv"
 
-    _process_kwargs = ["databaseSynId"]
+    _process_kwargs = ["newPath", "databaseSynId"]
 
     def _validate_filetype(self, filePath):
         assert os.path.basename(filePath).endswith(".csv")

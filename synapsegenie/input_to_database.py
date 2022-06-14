@@ -264,14 +264,19 @@ def processfiles(syn, validfiles, center, path_to_genie,
     """
     logger.info(f"PROCESSING {center} FILES: {len(validfiles)}")
     center_staging_folder = os.path.join(path_to_genie, center)
-    center_staging_synid = center_mapping_df.query(
-        f"center == '{center}'").stagingSynId.iloc[0]
+    # TODO: determine if staging folder is important...
+    # center_staging_synid = center_mapping_df.query(
+    #     f"center == '{center}'").stagingSynId.iloc[0]
 
     if not os.path.exists(center_staging_folder):
         os.makedirs(center_staging_folder)
 
     for _, row in validfiles.iterrows():
         filetype = row['fileType']
+        # Added per data folder
+        data_folder_synid = databaseToSynIdMappingDf.Id[
+            databaseToSynIdMappingDf['Database'] == f"{filetype}_folder"
+        ]
         # filename = os.path.basename(filePath)
         newpath = os.path.join(center_staging_folder, row['name'])
         # store = True
@@ -288,7 +293,7 @@ def processfiles(syn, validfiles, center, path_to_genie,
             processor = format_registry[filetype](syn, center)
             processor.process(
                 filePath=row['path'], newPath=newpath,
-                parentId=center_staging_synid, databaseSynId=tableid,
+                parentId=data_folder_synid, databaseSynId=tableid,
                 fileSynId=row['id'],
                 databaseToSynIdMappingDf=databaseToSynIdMappingDf
             )

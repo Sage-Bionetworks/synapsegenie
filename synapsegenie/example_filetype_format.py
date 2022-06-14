@@ -71,7 +71,7 @@ class FileTypeFormat:
         self._validate_filetype(filePath)
         return self._filetype
 
-    def process_steps(self, df, **kwargs):
+    def process_steps(self, path_or_df, **kwargs):
         '''
         This function is modified for every single file.
         It reformats the file and stores the file into database and Synapse.
@@ -108,7 +108,7 @@ class FileTypeFormat:
                 "%s not in parameter list" % required_parameter
             mykwargs[required_parameter] = kwargs[required_parameter]
         logger.info('PROCESSING %s' % filePath)
-        path_or_df = self.read_file([filePath])
+        path_or_df = self.read_file(filePath)
         path = self.process_steps(path_or_df, **mykwargs)
         return path
 
