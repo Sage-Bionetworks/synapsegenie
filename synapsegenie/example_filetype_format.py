@@ -107,7 +107,7 @@ class FileTypeFormat:
             assert required_parameter in kwargs.keys(), \
                 "%s not in parameter list" % required_parameter
             mykwargs[required_parameter] = kwargs[required_parameter]
-        logger.info('PROCESSING %s' % filePath)
+        logger.info(f'PROCESSING {filePath}')
         path_or_df = self.read_file(filePath)
         path = self.process_steps(path_or_df, **mykwargs)
         return path
@@ -130,13 +130,13 @@ class FileTypeFormat:
         logger.info(f"NO VALIDATION for {self._filetype} files")
         return errors, warnings
 
-    def validate(self, filePath, **kwargs):
+    def validate(self, entity, **kwargs):
         '''
         This is the main validation function.
         Every file type calls self._validate, which is different.
 
         Args:
-            filePath: A list of file paths.
+            entity: A Synapse Entity
             kwargs: The kwargs are determined by self._validation_kwargs
 
         Returns:
@@ -151,14 +151,14 @@ class FileTypeFormat:
         errors = ""
 
         try:
-            df = self.read_file(filePath)
+            df = self.read_file(entity.path)
         except Exception as e:
-            errors = (f"The file(s) ({filePath}) cannot be read. "
+            errors = (f"The file(s) ({entity.path}) cannot be read. "
                       f"Original error: {str(e)}")
             warnings = ""
 
         if not errors:
-            logger.info(f"VALIDATING {os.path.basename(filePath)}")
+            logger.info(f"VALIDATING {os.path.basename(entity.path)}")
             errors, warnings = self._validate(df, **mykwargs)
         # File is valid if error string is blank
         valid = (errors == '')

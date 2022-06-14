@@ -196,7 +196,7 @@ def validatefile(syn, project_id, entity, validation_status_table,
 
     '''
 
-    filepath = entity.path
+    # filepath = entity.path
     filename = entity.name
 
     logger.info(f"VALIDATING {filename}")
