@@ -90,18 +90,17 @@ def check_existing_file_status(validation_status_table, error_tracker_table,
     # if len(entity) > 2:
     #     raise ValueError(
     #         "There should never be more than 2 files being validated.")
+    status = ""
+    error = ""
 
     validation_statusdf = validation_status_table.asDataFrame()
     error_trackerdf = error_tracker_table.asDataFrame()
     # This should be outside fo the forloop so that it doesn't
     # get reset
     to_validate = False
-    #for ent in entities:
     # Get the current status and errors from the tables.
     current_status = validation_statusdf[validation_statusdf['id'] == entity.id]
     current_error = error_trackerdf[error_trackerdf['id'] == entity.id]
-    status = ""
-    error = ""
     if current_status.empty:
         to_validate = True
     else:
