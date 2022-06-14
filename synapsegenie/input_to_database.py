@@ -155,7 +155,7 @@ def _send_validation_error_email(syn, user, message_objs):
                     messageSubject=f"GENIE Validation Error - {date_now}",
                     messageBody=email_message)
 
-
+# TODO: update this function
 def _get_status_and_error_list(valid, message, entity):
     '''
     Helper function to return the status and error list of the
@@ -227,6 +227,7 @@ def validatefile(syn, project_id, entity, validation_status_table,
     if check_file_status['to_validate']:
         valid, message = validator.validate_single_file()
         logger.info("VALIDATION COMPLETE")
+        # TODO: update this
         input_status_list, invalid_errors_list = _get_status_and_error_list(
             valid, message, entity
         )
