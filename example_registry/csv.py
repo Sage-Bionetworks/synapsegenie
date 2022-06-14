@@ -19,13 +19,16 @@ class Csv(FileTypeFormat):
         assert os.path.basename(filePath).endswith(".csv")
 
     def _process(self, df):
-        df.columns = [df.upper() for col in df.columns]
+        df.columns = [col.upper() for col in df.columns]
         return df
 
     def process_steps(self, df, newPath, databaseSynId):
         df = self._process(df)
-        process_functions.updateData(self.syn, databaseSynId, df, self.center,
-                                     toDelete=True)
+        # TODO: no center column in Synapse table
+        # process_functions.update_data(
+        #     syn=self.syn, databaseSynId=databaseSynId, newData=df,
+        #     filterBy=self.center, toDelete=True
+        # )
         df.to_csv(newPath, sep="\t", index=False)
         return newPath
 
