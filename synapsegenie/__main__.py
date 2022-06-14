@@ -91,13 +91,11 @@ def validate_single_file_cli_wrapper(syn, args):
         args.format_registry_packages
     )
     logger.debug(f"Using {format_registry} file formats.")
-    entity_list = [synapseclient.File(name=filepath, path=filepath,
-                                      parentId=None)
-                   for filepath in args.filepath]
+    entity = synapseclient.File(name=args.filepath, path=args.filepath, parentId=None)
 
     validator = validator_cls(syn=syn, project_id=args.project_id,
                               center=args.center,
-                              entitylist=entity_list,
+                              entity=entity,
                               format_registry=format_registry,
                               file_type=args.filetype)
     mykwargs = dict(project_id=args.project_id)

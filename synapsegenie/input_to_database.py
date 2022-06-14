@@ -87,6 +87,7 @@ def check_existing_file_status(validation_status_table, error_tracker_table,
             to_validate: Boolean value for whether of not an input
                          file needs to be validated
     '''
+    # TODO: check if entity is passed in
     # if len(entity) > 2:
     #     raise ValueError(
     #         "There should never be more than 2 files being validated.")
