@@ -295,6 +295,10 @@ def build_parser():
         "--debug", action='store_true',
         help="Add debug mode to synapse"
     )
+    parser_process.add_argument(
+        "--silent", action='store_true',
+        help="Don't sent notification emails to entiy creator/modifiers"
+    )
     parser_process.set_defaults(func=process_cli_wrapper)
 
     parser_replace_db = subparsers.add_parser(
