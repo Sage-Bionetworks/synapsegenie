@@ -515,7 +515,7 @@ def _update_tables_content(validation_statusdf, error_trackingdf):
 
 def validation(syn, project_id, center, center_files,
                database_synid_mappingdf,
-               format_registry, validator_cls):
+               format_registry, validator_cls, silent=False):
     '''
     Validation of all center files
 
