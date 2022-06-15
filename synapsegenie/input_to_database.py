@@ -515,7 +515,7 @@ def _update_tables_content(validation_statusdf, error_trackingdf):
 
 def validation(syn, project_id, center, center_files,
                database_synid_mappingdf,
-               format_registry, validator_cls, silent):
+               format_registry, validator_cls):
     '''
     Validation of all center files
 
@@ -525,7 +525,6 @@ def validation(syn, project_id, center, center_files,
         process: main, vcf, maf
         center_mapping_df: center mapping dataframe
         thread: Unused parameter for now
-        notification: Boolean if to send notification emails. Default true
 
     Returns:
         dataframe: Valid files
