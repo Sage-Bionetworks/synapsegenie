@@ -39,11 +39,10 @@ def test_perfect_determine_filetype():
     Parameters are passed in from filename_fileformat_map
     """
     filetype = "clincial"
-    ent_list = [SAMPLE_ENT]
     with patch.object(FileFormat, "validate_filetype",
                       return_value=filetype):
         validator = validate.ValidationHelper(
-            syn, None, CENTER, ent_list,
+            syn, None, CENTER, SAMPLE_ENT,
             format_registry={filetype: FileFormat}
         )
         assert validator.determine_filetype() == filetype
@@ -54,12 +53,11 @@ def test_wrongfilename_noerror_determine_filetype():
     Tests None is passed back when wrong filename is passed
     when raise_error flag is False
     '''
-    ent_list = [WRONG_NAME_ENT]
     with patch.object(FileFormat, "validate_filetype",
                       side_effect=AssertionError):
         validator = validate.ValidationHelper(
             syn, project_id=None,
-            center=CENTER, entitylist=ent_list,
+            center=CENTER, entity=WRONG_NAME_ENT,
             format_registry={"wrong": FileFormat})
         assert validator.determine_filetype() is None
 
@@ -105,7 +103,6 @@ def test_valid_validate_single_file():
     Tests that all the functions are run in validate single
     file workflow and all the right things are returned
     """
-    entitylist = [CLIN_ENT]
     error_string = ''
     warning_string = ''
     expected_valid = True
@@ -122,7 +119,7 @@ def test_valid_validate_single_file():
                       return_value=expected_message) as mock_determine:
         validator = validate.ValidationHelper(
             syn, project_id="syn1234", center=CENTER,
-            entitylist=entitylist, format_registry={'clinical': FileFormat}
+            entity=CLIN_ENT, format_registry={'clinical': FileFormat}
         )
         valid, message = validator.validate_single_file(oncotree_link=None,
                                                         nosymbol_check=False)
@@ -133,7 +130,7 @@ def test_valid_validate_single_file():
 
         mock_determine_ftype.assert_called_once_with()
 
-        mock_genie_class.assert_called_once_with(filePathList=[CLIN_ENT.path])
+        mock_genie_class.assert_called_once_with(filePath=CLIN_ENT.path)
 
         mock_determine.assert_called_once_with(error_string, warning_string)
 
@@ -143,7 +140,6 @@ def test_filetype_validate_single_file():
     Tests that if filetype is passed in that an error is thrown
     if it is an incorrect filetype
     """
-    entitylist = [WRONG_NAME_ENT]
     expected_error = ("----------------ERRORS----------------\n"
                       "Your filename is incorrect! Please change your "
                       "filename before you run the validator or specify "
@@ -152,7 +148,7 @@ def test_filetype_validate_single_file():
     with patch.object(FileFormat, "validate_filetype",
                       side_effect=AssertionError):
         validator = validate.ValidationHelper(
-            syn=syn, project_id=None, center=CENTER, entitylist=entitylist,
+            syn=syn, project_id=None, center=CENTER, entity=WRONG_NAME_ENT,
             format_registry={'wrong': FileFormat}
         )
 
@@ -166,7 +162,6 @@ def test_wrongfiletype_validate_single_file():
     Tests that if there is no filetype for the filename passed
     in, an error is thrown
     """
-    entitylist = [WRONG_NAME_ENT]
     expected_error = ('----------------ERRORS----------------\n'
                       'Your filename is incorrect! Please change your '
                       'filename before you run the validator or specify '
@@ -176,7 +171,7 @@ def test_wrongfiletype_validate_single_file():
                       "determine_filetype",
                       return_value=None) as mock_determine_filetype:
         validator = validate.ValidationHelper(
-            syn=syn, project_id=None, center=CENTER, entitylist=entitylist,
+            syn=syn, project_id=None, center=CENTER, entity=WRONG_NAME_ENT,
             format_registry={'wrong': Mock()}
         )
         valid, message = validator.validate_single_file()

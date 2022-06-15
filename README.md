@@ -7,7 +7,7 @@ This package can deploy a AACR GENIE like project on Synapse and perform validat
 ## Installation
 
 Dependencies:
-- Python 3.6 or higher
+- Python 3.7 or higher
 - [synapseclient](http://python-docs.synapse.org) (`pip install synapseclient`)
 - Python [pandas](http://pandas.pydata.org) (`pip install pandas`)
 
@@ -50,19 +50,19 @@ synapsegenie /path/to/file center_name \
 ```
 
 ### Validation/Processing
-`synapsegenie` will validate and process all the files uploaded by centers.  Every valid file will be processed and uploaded into Synapse tables.
+`synapsegenie` will validate and process all the files uploaded by centers.  Every valid file will be processed and uploaded into Synapse tables. [syn22337078](https://www.synapse.org/#!Synapse:syn22337078) is a test project.
 
 ```
 synapsegenie process -h
 
 # only validate
 synapsegenie process --format_registry_packages example_registry \
-                     --project_id syn12345
+                     --project_id syn22337078 \
                      --only_validate
 
 # validate + process
 synapsegenie process --format_registry_packages example_registry \
-                     --project_id syn12345
+                     --project_id syn22337078
 ```
 
 ## Contributing
