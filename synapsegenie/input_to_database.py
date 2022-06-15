@@ -515,7 +515,7 @@ def _update_tables_content(validation_statusdf, error_trackingdf):
 
 def validation(syn, project_id, center, center_files,
                database_synid_mappingdf,
-               format_registry, validator_cls):
+               format_registry, validator_cls, notification=True):
     '''
     Validation of all center files
 
@@ -525,6 +525,7 @@ def validation(syn, project_id, center, center_files,
         process: main, vcf, maf
         center_mapping_df: center mapping dataframe
         thread: Unused parameter for now
+        notification: Boolean if to send notification emails. Default true
 
     Returns:
         dataframe: Valid files
@@ -593,14 +594,16 @@ def validation(syn, project_id, center, center_files,
     # In GENIE, we not only want to send out file format errors, but
     # also when there are duplicated errors.  The function below will
     # append duplication errors as an email to send to users (if applicable)
-    user_message_dict = append_duplication_errors(duplicated_filesdf,
-                                                  user_message_dict)
+    if notification:
+    
+        user_message_dict = append_duplication_errors(duplicated_filesdf,
+                                                      user_message_dict)
 
-    for user, message_objs in user_message_dict.items():
-        logger.debug(f"Sending messages to user {user}.")
+        for user, message_objs in user_message_dict.items():
+            logger.debug(f"Sending messages to user {user}.")
 
-        _send_validation_error_email(syn=syn, user=user,
-                                     message_objs=message_objs)
+            _send_validation_error_email(syn=syn, user=user,
+                                         message_objs=message_objs)
 
     update_status_and_error_tables(
         syn=syn,
