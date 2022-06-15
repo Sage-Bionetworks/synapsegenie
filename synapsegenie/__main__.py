@@ -115,7 +115,7 @@ def process_cli_wrapper(syn, args):
 
 def process(syn, project_id, center=None, pemfile=None,
             delete_old=False, only_validate=False, debug=False,
-            format_registry_packages=None):
+            format_registry_packages=None, silent=False):
     """Process files"""
     # Get the Synapse Project where data is stored
     # Should have annotations to find the table lookup
@@ -294,10 +294,6 @@ def build_parser():
     parser_process.add_argument(
         "--debug", action='store_true',
         help="Add debug mode to synapse"
-    )
-    parser_process.add_argument(
-        "--silent", action='store_true',
-        help="Don't sent notification emails to entiy creator/modifiers"
     )
     parser_process.set_defaults(func=process_cli_wrapper)
 
