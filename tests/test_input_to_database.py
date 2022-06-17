@@ -759,7 +759,7 @@ class TestValidation:
                 validator_cls=ValidationHelper
             )
             assert valid_filedf.equals(
-                self.validation_statusdf[['id', 'path', 'fileType', 'name']]
+                self.validation_statusdf[['id', 'path', 'fileType', 'name', 'entity']]
             )
 
 @pytest.mark.parametrize(
@@ -769,10 +769,14 @@ class TestValidation:
     ]
 )
 def test_main_processfile(genieclass, filetype):
+    entity = synapseclient.Entity(id='syn1', md5='44444',
+                                  path='/path/to/data_clinical_supp.txt',
+                                  name='data_clinical_supp_SAGE.txt')
     validfiles = {'id': ['syn1'],
                   'path': ['/path/to/data_clinical_supp.txt'],
                   'fileType': [filetype],
-                  'name': ['data_clinical_supp_SAGE.txt']}
+                  'name': ['data_clinical_supp_SAGE.txt'],
+                  'entity': [entity]}
     validfilesdf = pd.DataFrame(validfiles)
     path_to_genie = "./"
     center_mapping = {'stagingSynId': ["syn123"],
