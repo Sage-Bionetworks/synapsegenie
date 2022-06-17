@@ -18,35 +18,34 @@ class FileTypeFormat:
         self.syn = syn
         self.center = center
 
-    def _get_data(self, filePath):
+    def _get_data(self, entity):
         '''
-        This function by defaults assumes the filePathList is length of 1
-        and is a tsv file.  Could change depending on file type.
+        Gets the data by reading the file.
+        This function can be configured to include a download step
+        if the files aren't downloaded.
 
         Args:
-            filePathList:  A list of file paths (Max is 2 for the two
-                           clinical files)
+            entity: A Synapse Entity
 
         Returns:
             df: Pandas dataframe of file
         '''
-        df = pd.read_csv(filePath, sep="\t", comment="#")
-        return df
+        # entity = self.syn.get(entity)
+        data = pd.read_csv(entity.path, sep="\t", comment="#")
+        return data
 
     def read_file(self, entity):
         '''
         Each file is to be read in for validation and processing.
-        This is not to be changed in any functions.
 
         Args:
-            filePathList:  A list of file paths (Max is 2 for the two
-                           clinical files)
+            entity: A Synapse Entity
 
         Returns:
-            df: Pandas dataframe of file
+            pd.DataFrame: Pandas dataframe of file
         '''
-        df = self._get_data(entity.path)
-        return df
+        data = self._get_data(entity)
+        return data
 
     def _validate_filetype(self, filePath):
         '''Validates the file type by user defined function.  A common mapping
@@ -71,25 +70,24 @@ class FileTypeFormat:
         self._validate_filetype(filePath)
         return self._filetype
 
-    def process_steps(self, path_or_df, **kwargs):
+    def process_steps(self, path_or_data, **kwargs):
         '''
         This function is modified for every single file.
         It reformats the file and stores the file into database and Synapse.
         '''
         return ''
 
-    def preprocess(self, newpath):
+    def preprocess(self, entity):
         '''
         This is for any preprocessing that has to occur to the entity name
-        to add to kwargs for processing.  entity name is included in
-        the new path
+        to add to kwargs for processing.
 
         Args:
             newpath: Path to file
         '''
         return dict()
 
-    def process(self, filePath, **kwargs):
+    def process(self, entity, **kwargs):
         '''
         This is the main processing function.
 
@@ -100,19 +98,19 @@ class FileTypeFormat:
         Returns:
             str: file path of processed file
         '''
-        preprocess_args = self.preprocess(kwargs.get('newPath'))
+        preprocess_args = self.preprocess(entity)
         kwargs.update(preprocess_args)
         mykwargs = {}
         for required_parameter in self._process_kwargs:
             assert required_parameter in kwargs.keys(), \
                 "%s not in parameter list" % required_parameter
             mykwargs[required_parameter] = kwargs[required_parameter]
-        logger.info(f'PROCESSING {filePath}')
-        path_or_df = self.read_file(filePath)
-        path = self.process_steps(path_or_df, **mykwargs)
+        logger.info(f'PROCESSING {entity.name}')
+        path_or_data = self.read_file(entity)
+        path = self.process_steps(path_or_data, **mykwargs)
         return path
 
-    def _validate(self, df, **kwargs):
+    def _validate(self, path_or_data, **kwargs):
         '''
         This is the base validation function.
         By default, no validation occurs.
