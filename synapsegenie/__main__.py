@@ -3,12 +3,18 @@
 """synapsegenie cli"""
 import argparse
 from datetime import date
+import json
 import logging
+import os
 
 import synapseclient
+from synapseclient.core.exceptions import (
+    SynapseNoCredentialsError,
+    SynapseAuthenticationError
+)
 
-from synapsegenie import (bootstrap, config, input_to_database,
-                          process_functions, validate, write_invalid_reasons)
+from . import (bootstrap, config, input_to_database,
+               process_functions, validate, write_invalid_reasons)
 
 from .__version__ import __version__
 
@@ -16,22 +22,26 @@ from .__version__ import __version__
 logger = logging.getLogger(__name__)
 
 
-def synapse_login(username=None, password=None):
-    """
-    This function logs into synapse for you if credentials are saved.
-    If not saved, then user is prompted username and password.
-
-    :returns:     Synapseclient object
+def synapse_login(synapse_config=synapseclient.client.CONFIG_FILE):
+    """Login to Synapse.  Looks first for secrets.
+    Args:
+        synapse_config: Path to synapse configuration file.
+                        Defaults to ~/.synapseConfig
+    Returns:
+        Synapse connection
     """
     try:
-        syn = synapseclient.login(silent=True)
-    except Exception:
-        if username is None and password is None:
-            raise ValueError("Please specify --syn_user, --syn_pass to specify your Synapse "
-                             "login. Please view https://docs.synapse.org/articles/client_configuration.html"
-                             "to learn about logging into Synapse via the Python client.")
-        syn = synapseclient.login(email=username, password=password,
-                                  silent=True)
+        syn = synapseclient.Synapse(skip_checks=True, configPath=synapse_config)
+        if os.getenv("SCHEDULED_JOB_SECRETS") is not None:
+            secrets = json.loads(os.getenv("SCHEDULED_JOB_SECRETS"))
+            syn.login(silent=True, authToken=secrets["SYNAPSE_AUTH_TOKEN"])
+        else:
+            syn.login(silent=True)
+    except (SynapseNoCredentialsError, SynapseAuthenticationError):
+        raise ValueError(
+            "Login error: please make sure you have correctly "
+            "configured your client."
+        )
     return syn
 
 
@@ -109,8 +119,7 @@ def validate_single_file_cli_wrapper(syn, args):
 
 def process_cli_wrapper(syn, args):
     """Process CLI wrapper"""
-    process(syn, args.project_id, center=args.center,
-            pemfile=args.pemfile, delete_old=args.delete_old,
+    process(syn, args.project_id, center=args.center, delete_old=args.delete_old,
             only_validate=args.only_validate, debug=args.debug,
             format_registry_packages=args.format_registry_packages)
 
@@ -191,10 +200,7 @@ def build_parser():
                     'specified project given a file format registry package.'
     )
 
-    parser.add_argument("--syn_user", type=str, help='Synapse username')
-
-    parser.add_argument("--syn_pass", type=str, help='Synapse password')
-
+    parser.add_argument("-c", "--synapse_config", type=str, help='Synapse config file')
     parser.add_argument('-v', '--version', action='version',
                         version='%(prog)s {}'.format(__version__))
 
@@ -282,10 +288,6 @@ def build_parser():
                                            parents=[parent_parser])
     parser_process.add_argument('--center', help='The centers')
     parser_process.add_argument(
-        "--pemfile", type=str,
-        help="Path to PEM file (genie.pem)"
-    )
-    parser_process.add_argument(
         "--delete_old", action='store_true',
         help="Delete all old processed and temp files"
     )
@@ -331,7 +333,7 @@ def build_parser():
 def main():
     """Invoke"""
     args = build_parser().parse_args()
-    syn = synapse_login(args.syn_user, args.syn_pass)
+    syn = synapse_login(args.synapse_config)
     # func has to match the set_defaults
     args.func(syn, args)
 
