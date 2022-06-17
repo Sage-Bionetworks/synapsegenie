@@ -18,6 +18,25 @@ class Csv(FileTypeFormat):
     def _validate_filetype(self, filePath):
         assert os.path.basename(filePath).endswith(".csv")
 
+    def read_file(self, entity):
+        '''
+        Each file is to be read in for validation and processing.
+        This is not to be changed in any functions. If you don't
+        download the files by default, you'll have to download the
+        entity here.
+
+        Args:
+            filePathList:  A list of file paths (Max is 2 for the two
+                           clinical files)
+
+        Returns:
+            df: Pandas dataframe of file
+        '''
+        # Downloaded entity if only entity is passed in
+        # dl_entity = self.syn.get(entity)
+        df = self._get_data(entity.path)
+        return df
+
     def _process(self, df):
         df.columns = [col.upper() for col in df.columns]
         return df

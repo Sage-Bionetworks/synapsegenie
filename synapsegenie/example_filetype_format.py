@@ -18,7 +18,7 @@ class FileTypeFormat:
         self.syn = syn
         self.center = center
 
-    def _get_dataframe(self, filePath):
+    def _get_data(self, filePath):
         '''
         This function by defaults assumes the filePathList is length of 1
         and is a tsv file.  Could change depending on file type.
@@ -33,7 +33,7 @@ class FileTypeFormat:
         df = pd.read_csv(filePath, sep="\t", comment="#")
         return df
 
-    def read_file(self, filePath):
+    def read_file(self, entity):
         '''
         Each file is to be read in for validation and processing.
         This is not to be changed in any functions.
@@ -45,7 +45,7 @@ class FileTypeFormat:
         Returns:
             df: Pandas dataframe of file
         '''
-        df = self._get_dataframe(filePath)
+        df = self._get_data(entity.path)
         return df
 
     def _validate_filetype(self, filePath):
@@ -151,7 +151,7 @@ class FileTypeFormat:
         errors = ""
 
         try:
-            df = self.read_file(entity.path)
+            df = self.read_file(entity)
         except Exception as e:
             errors = (f"The file(s) ({entity.path}) cannot be read. "
                       f"Original error: {str(e)}")
