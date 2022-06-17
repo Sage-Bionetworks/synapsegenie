@@ -8,6 +8,7 @@ import logging
 import os
 
 import synapseclient
+from synapseclient import Synapse
 from synapseclient.core.exceptions import (
     SynapseNoCredentialsError,
     SynapseAuthenticationError
@@ -22,11 +23,16 @@ from .__version__ import __version__
 logger = logging.getLogger(__name__)
 
 
-def synapse_login(synapse_config=synapseclient.client.CONFIG_FILE):
-    """Login to Synapse.  Looks first for secrets.
+def synapse_login(synapse_config: str = None) -> Synapse:
+    """Login to Synapse.
+    1. Looks first for scheduled job secrets.
+    2. Use synapse config file if provided
+    3. If config not providede, Client will look for SYNAPSE_AUTH_TOKEN
+       env variable
+
     Args:
         synapse_config: Path to synapse configuration file.
-                        Defaults to ~/.synapseConfig
+
     Returns:
         Synapse connection
     """
