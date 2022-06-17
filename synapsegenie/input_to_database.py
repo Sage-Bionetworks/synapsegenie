@@ -288,9 +288,9 @@ def processfiles(syn, validfiles, center, path_to_genie,
         if filetype is not None:
             processor = format_registry[filetype](syn, center)
             processor.process(
-                filePath=row['path'], newPath=newpath,
+                entity=row['entity'], newPath=newpath,
                 parentId=data_folder_synid, databaseSynId=tableid,
-                fileSynId=row['id'],
+                # fileSynId=row['id'],
                 databaseToSynIdMappingDf=databaseToSynIdMappingDf
             )
 
@@ -611,7 +611,7 @@ def validation(syn, project_id, center, center_files,
     )
 
     valid_filesdf = validation_statusdf.query('status == "VALIDATED"')
-    return valid_filesdf[['id', 'path', 'fileType', 'name']]
+    return valid_filesdf[['id', 'path', 'fileType', 'name', 'entity']]
 
 
 def center_input_to_database(syn, project_id, center,
