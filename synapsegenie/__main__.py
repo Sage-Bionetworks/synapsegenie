@@ -7,8 +7,14 @@ import logging
 
 import synapseclient
 
-from synapsegenie import (bootstrap, config, input_to_database,
-                          process_functions, validate, write_invalid_reasons)
+from synapsegenie import (
+    bootstrap,
+    config,
+    input_to_database,
+    process_functions,
+    validate,
+    write_invalid_reasons,
+)
 
 from .__version__ import __version__
 
@@ -27,11 +33,12 @@ def synapse_login(username=None, password=None):
         syn = synapseclient.login(silent=True)
     except Exception:
         if username is None and password is None:
-            raise ValueError("Please specify --syn_user, --syn_pass to specify your Synapse "
-                             "login. Please view https://docs.synapse.org/articles/client_configuration.html"
-                             "to learn about logging into Synapse via the Python client.")
-        syn = synapseclient.login(email=username, password=password,
-                                  silent=True)
+            raise ValueError(
+                "Please specify --syn_user, --syn_pass to specify your Synapse "
+                "login. Please view https://docs.synapse.org/articles/client_configuration.html"
+                "to learn about logging into Synapse via the Python client."
+            )
+        syn = synapseclient.login(email=username, password=password, silent=True)
     return syn
 
 
@@ -40,14 +47,13 @@ def get_file_errors_cli_wrapper(syn, args):
     project = syn.get(args.project_id)
     db_mapping = syn.tableQuery(f"select * from {project.dbMapping[0]}")
     db_mappingdf = db_mapping.asDataFrame()
-    error_tracker_synid = db_mappingdf['Id'][
-        db_mappingdf['Database'] == "errorTracker"
+    error_tracker_synid = db_mappingdf["Id"][
+        db_mappingdf["Database"] == "errorTracker"
     ][0]
     center_errors = write_invalid_reasons.get_center_invalid_errors(
         syn, error_tracker_synid
     )
     print(center_errors[args.center])
-
 
 
 def bootstrap_infra(syn, args):
@@ -60,9 +66,12 @@ def bootstrap_infra(syn, args):
     else:
         project = syn.get(args.project_id)
 
-    bootstrap.main(syn, project=project,
-                   format_registry=args.format_registry_packages,
-                   centers=args.centers)
+    bootstrap.main(
+        syn,
+        project=project,
+        format_registry=args.format_registry_packages,
+        centers=args.centers,
+    )
 
 
 def validate_single_file_cli_wrapper(syn, args):
@@ -73,33 +82,33 @@ def validate_single_file_cli_wrapper(syn, args):
     databasetosynid_json = process_functions.get_dbmapping(
         syn, project_id=args.project_id
     )
-    databasetosynid_mappingdf = databasetosynid_json['df']
+    databasetosynid_mappingdf = databasetosynid_json["df"]
 
     synid = databasetosynid_mappingdf.query('Database == "centerMapping"').Id
 
-    center_mapping = syn.tableQuery('select * from {}'.format(synid.iloc[0]))
+    center_mapping = syn.tableQuery("select * from {}".format(synid.iloc[0]))
     center_mapping_df = center_mapping.asDataFrame()
 
     # Check center argparse
     validate._check_center_input(args.center, center_mapping_df.center.tolist())
 
-    validator_cls = config.collect_validation_helper(
-        args.format_registry_packages
-    )
+    validator_cls = config.collect_validation_helper(args.format_registry_packages)
 
-    format_registry = config.collect_format_types(
-        args.format_registry_packages
-    )
+    format_registry = config.collect_format_types(args.format_registry_packages)
     logger.debug(f"Using {format_registry} file formats.")
-    entity_list = [synapseclient.File(name=filepath, path=filepath,
-                                      parentId=None)
-                   for filepath in args.filepath]
+    entity_list = [
+        synapseclient.File(name=filepath, path=filepath, parentId=None)
+        for filepath in args.filepath
+    ]
 
-    validator = validator_cls(syn=syn, project_id=args.project_id,
-                              center=args.center,
-                              entitylist=entity_list,
-                              format_registry=format_registry,
-                              file_type=args.filetype)
+    validator = validator_cls(
+        syn=syn,
+        project_id=args.project_id,
+        center=args.center,
+        entitylist=entity_list,
+        format_registry=format_registry,
+        file_type=args.filetype,
+    )
     mykwargs = dict(project_id=args.project_id)
     valid, message = validator.validate_single_file(**mykwargs)
 
@@ -109,39 +118,52 @@ def validate_single_file_cli_wrapper(syn, args):
 
 def process_cli_wrapper(syn, args):
     """Process CLI wrapper"""
-    process(syn, args.project_id, center=args.center,
-            pemfile=args.pemfile, delete_old=args.delete_old,
-            only_validate=args.only_validate, debug=args.debug,
-            format_registry_packages=args.format_registry_packages)
+    process(
+        syn,
+        args.project_id,
+        center=args.center,
+        pemfile=args.pemfile,
+        delete_old=args.delete_old,
+        only_validate=args.only_validate,
+        debug=args.debug,
+        format_registry_packages=args.format_registry_packages,
+    )
 
 
-def process(syn, project_id, center=None, pemfile=None,
-            delete_old=False, only_validate=False, debug=False,
-            format_registry_packages=None):
+def process(
+    syn,
+    project_id,
+    center=None,
+    pemfile=None,
+    delete_old=False,
+    only_validate=False,
+    debug=False,
+    format_registry_packages=None,
+):
     """Process files"""
     # Get the Synapse Project where data is stored
     # Should have annotations to find the table lookup
     db_mapping_info = process_functions.get_dbmapping(syn, project_id)
-    database_mappingdf = db_mapping_info['df']
+    database_mappingdf = db_mapping_info["df"]
 
     center_mapping_id = process_functions.get_database_synid(
         syn, "centerMapping", database_mappingdf=database_mappingdf
     )
 
-    center_mapping = syn.tableQuery(f'SELECT * FROM {center_mapping_id}')
+    center_mapping = syn.tableQuery(f"SELECT * FROM {center_mapping_id}")
     center_mapping_df = center_mapping.asDataFrame()
 
     if center is not None:
-        assert center in center_mapping_df.center.tolist(), (
-            "Must specify one of these centers: {}".format(
-                ", ".join(center_mapping_df.center)))
+        assert (
+            center in center_mapping_df.center.tolist()
+        ), "Must specify one of these centers: {}".format(
+            ", ".join(center_mapping_df.center)
+        )
         centers = [center]
     else:
-        center_mapping_df = center_mapping_df[
-            ~center_mapping_df['inputSynId'].isnull()
-        ]
+        center_mapping_df = center_mapping_df[~center_mapping_df["inputSynId"].isnull()]
         # release is a bool column
-        center_mapping_df = center_mapping_df[center_mapping_df['release']]
+        center_mapping_df = center_mapping_df[center_mapping_df["release"]]
         centers = center_mapping_df.center
 
     validator_cls = config.collect_validation_helper(format_registry_packages)
@@ -150,12 +172,15 @@ def process(syn, project_id, center=None, pemfile=None,
 
     for process_center in centers:
         input_to_database.center_input_to_database(
-            syn, project_id, process_center,
-            only_validate, database_mappingdf,
+            syn,
+            project_id,
+            process_center,
+            only_validate,
+            database_mappingdf,
             center_mapping_df,
             delete_old=delete_old,
             format_registry=format_registry,
-            validator_cls=validator_cls
+            validator_cls=validator_cls,
         )
 
     # error_tracker_synid = process_functions.get_database_synid(
@@ -172,157 +197,169 @@ def process(syn, project_id, center=None, pemfile=None,
 def replace_db_cli_wrapper(syn, args):
     """Replace existing db with new empty db"""
     db_mapping_info = process_functions.get_dbmapping(syn, args.project_id)
-    database_mappingdf = db_mapping_info['df']
-    if args.filetype not in database_mappingdf['Database'].tolist():
+    database_mappingdf = db_mapping_info["df"]
+    if args.filetype not in database_mappingdf["Database"].tolist():
         raise ValueError("Must specify existing database type")
     today = date.today()
-    table_name = f'{args.table_name} - {today}'
+    table_name = f"{args.table_name} - {today}"
     new_tables = process_functions.create_new_fileformat_table(
-        syn, args.filetype, table_name, args.project_id,
-        args.archive_projectid
+        syn, args.filetype, table_name, args.project_id, args.archive_projectid
     )
-    print(new_tables['newdb_ent'])
+    print(new_tables["newdb_ent"])
 
 
 def build_parser():
     """Build CLI parsers"""
     parser = argparse.ArgumentParser(
-        description='synapsegenie will validate and process files in a '
-                    'specified project given a file format registry package.'
+        description="synapsegenie will validate and process files in a "
+        "specified project given a file format registry package."
     )
 
-    parser.add_argument("--syn_user", type=str, help='Synapse username')
+    parser.add_argument("--syn_user", type=str, help="Synapse username")
 
-    parser.add_argument("--syn_pass", type=str, help='Synapse password')
+    parser.add_argument("--syn_pass", type=str, help="Synapse password")
 
-    parser.add_argument('-v', '--version', action='version',
-                        version='%(prog)s {}'.format(__version__))
+    parser.add_argument(
+        "-v", "--version", action="version", version="%(prog)s {}".format(__version__)
+    )
 
     # Create parent parsers that contain arguments per command but don't
     # want them to be on a top level parser.
     parent_parser = argparse.ArgumentParser(add_help=False)
     parent_parser.add_argument(
-        "--format_registry_packages", type=str, nargs="+",
+        "--format_registry_packages",
+        type=str,
+        nargs="+",
         default=["example_registry"],
         help="Python package name(s) to get valid file formats from "
-             "(default: %(default)s)."
+        "(default: %(default)s).",
     )
 
     parent_parser.add_argument(
-        "--project_id", type=str, required=True,
-        help='Synapse Project ID where data is stored.'
+        "--project_id",
+        type=str,
+        required=True,
+        help="Synapse Project ID where data is stored.",
     )
 
     subparsers = parser.add_subparsers(
-        title='commands', description='The following commands are available:',
-        help='For additional help: "synapsegenie <COMMAND> -h"'
+        title="commands",
+        description="The following commands are available:",
+        help='For additional help: "synapsegenie <COMMAND> -h"',
     )
 
     parser_validate = subparsers.add_parser(
-        'validate-single-file',
-        help='Validates a file whose file format is specified by the format '
-             'registry',
-        parents=[parent_parser]
+        "validate-single-file",
+        help="Validates a file whose file format is specified by the format "
+        "registry",
+        parents=[parent_parser],
     )
 
-    parser_validate.add_argument("filepath", type=str, nargs="+",
-                                 help='File that you are validating.')
+    parser_validate.add_argument(
+        "filepath", type=str, nargs="+", help="File that you are validating."
+    )
 
-    parser_validate.add_argument("center", type=str, help='Center name')
+    parser_validate.add_argument("center", type=str, help="Center name")
 
     validate_group = parser_validate.add_mutually_exclusive_group()
 
     validate_group.add_argument(
-        "--filetype", type=str,
-        help='By default, the validator uses the filename to match '
-             'the file format.  If your filename is incorrectly named, '
-             'it will be invalid.  If you know the file format you are '
-             'validating, you can ignore the filename validation and skip '
-             'to file content validation.'
+        "--filetype",
+        type=str,
+        help="By default, the validator uses the filename to match "
+        "the file format.  If your filename is incorrectly named, "
+        "it will be invalid.  If you know the file format you are "
+        "validating, you can ignore the filename validation and skip "
+        "to file content validation.",
     )
 
     validate_group.add_argument(
-        "--parentid", type=str, default=None,
-        help='Synapse id of center input folder. '
-             'If specified, your valid files will be uploaded '
-             'to this directory.'
+        "--parentid",
+        type=str,
+        default=None,
+        help="Synapse id of center input folder. "
+        "If specified, your valid files will be uploaded "
+        "to this directory.",
     )
 
     parser_validate.set_defaults(func=validate_single_file_cli_wrapper)
 
-    parser_bootstrap = subparsers.add_parser('bootstrap-infra',
-                                             help='Create GENIE-like infra')
+    parser_bootstrap = subparsers.add_parser(
+        "bootstrap-infra", help="Create GENIE-like infra"
+    )
     parser_bootstrap.add_argument(
-        "--format_registry_packages", type=str, nargs="+",
+        "--format_registry_packages",
+        type=str,
+        nargs="+",
         default=["example_registry"],
         help="Python package name(s) to get valid file formats from "
-             "(default: %(default)s)."
+        "(default: %(default)s).",
     )
 
     bootstrap_group = parser_bootstrap.add_mutually_exclusive_group(required=True)
 
     bootstrap_group.add_argument(
-        "--project_name", type=str,
+        "--project_name",
+        type=str,
         help="If you don't have an existing Synapse Project and would like "
-             "to create one, please specify a name."
+        "to create one, please specify a name.",
     )
 
     bootstrap_group.add_argument(
-        "--project_id", type=str,
+        "--project_id",
+        type=str,
         help="If you already have a synapsegenie compatible Synapse Project, "
-             "please specify its Synapse Project ID."
+        "please specify its Synapse Project ID.",
     )
 
-    parser_bootstrap.add_argument('--centers', help='The centers to create',
-                                  nargs="+", required=True)
+    parser_bootstrap.add_argument(
+        "--centers", help="The centers to create", nargs="+", required=True
+    )
 
     parser_bootstrap.set_defaults(func=bootstrap_infra)
 
-    parser_process = subparsers.add_parser('process', help='Process files',
-                                           parents=[parent_parser])
-    parser_process.add_argument('--center', help='The centers')
+    parser_process = subparsers.add_parser(
+        "process", help="Process files", parents=[parent_parser]
+    )
+    parser_process.add_argument("--center", help="The centers")
     parser_process.add_argument(
-        "--pemfile", type=str,
-        help="Path to PEM file (genie.pem)"
+        "--pemfile", type=str, help="Path to PEM file (genie.pem)"
     )
     parser_process.add_argument(
-        "--delete_old", action='store_true',
-        help="Delete all old processed and temp files"
+        "--delete_old",
+        action="store_true",
+        help="Delete all old processed and temp files",
     )
     parser_process.add_argument(
-        "--only_validate", action='store_true',
-        help="Only validate the files, don't process"
+        "--only_validate",
+        action="store_true",
+        help="Only validate the files, don't process",
     )
     parser_process.add_argument(
-        "--debug", action='store_true',
-        help="Add debug mode to synapse"
+        "--debug", action="store_true", help="Add debug mode to synapse"
     )
     parser_process.set_defaults(func=process_cli_wrapper)
 
     parser_replace_db = subparsers.add_parser(
-        'replace-db',
-        help='Replace existing database with new empty database',
-        parents=[parent_parser]
+        "replace-db",
+        help="Replace existing database with new empty database",
+        parents=[parent_parser],
     )
-    parser_replace_db.add_argument('filetype',
-                                   help='Database type to replace')
+    parser_replace_db.add_argument("filetype", help="Database type to replace")
     parser_replace_db.add_argument(
-        'archive_projectid',
-        help='Synapse id of project to archive table'
+        "archive_projectid", help="Synapse id of project to archive table"
     )
     parser_replace_db.add_argument(
-        'table_name',
-        help='New table name.  Will have todays date appened to it.'
+        "table_name", help="New table name.  Will have todays date appened to it."
     )
     parser_replace_db.set_defaults(func=replace_db_cli_wrapper)
 
     parser_get_invalid = subparsers.add_parser(
-        'get-file-errors',
-        help='Get the file invalid reasons for a specific center',
-        parents=[parent_parser]
+        "get-file-errors",
+        help="Get the file invalid reasons for a specific center",
+        parents=[parent_parser],
     )
-    parser_get_invalid.add_argument("center", type=str,
-                                    help='Contributing Centers')
+    parser_get_invalid.add_argument("center", type=str, help="Contributing Centers")
     parser_get_invalid.set_defaults(func=get_file_errors_cli_wrapper)
 
     return parser

@@ -24,8 +24,9 @@ class Csv(FileTypeFormat):
 
     def process_steps(self, df, newPath, databaseSynId):
         df = self._process(df)
-        process_functions.updateData(self.syn, databaseSynId, df, self.center,
-                                     toDelete=True)
+        process_functions.updateData(
+            self.syn, databaseSynId, df, self.center, toDelete=True
+        )
         df.to_csv(newPath, sep="\t", index=False)
         return newPath
 
