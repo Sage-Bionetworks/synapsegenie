@@ -139,7 +139,7 @@ def _send_validation_error_email(syn, user, message_objs):
     for message_obj in message_objs:
         file_names = message_obj['filenames']
         error_message = message_obj['messages']
-        errors += f"Filenames: {file_names}, Errors:\n {error_message}\n\n"
+        errors += f"Filename: {file_names}, Errors:\n {error_message}\n\n"
 
     email_message = (f"Dear {username},\n\n"
                      "You have invalid files! "

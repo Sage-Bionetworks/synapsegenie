@@ -502,9 +502,9 @@ def test_invalid__get_status_and_error_list():
 
 def test__send_validation_error_email():
     message = "invalid error message here"
-    filenames = ['data_clinical_supp_SAGE.txt']
+    filename = 'data_clinical_supp_SAGE.txt'
     file_user = '333'
-    message_objs = [dict(filenames=filenames, messages=message)]
+    message_objs = [dict(filenames=filename, messages=message)]
     with patch.object(syn, "getUserProfile",
                       return_value={'userName':
                                     'trial'}) as patch_syn_getuserprofile,\
@@ -519,7 +519,7 @@ def test__send_validation_error_email():
         error_message = ("Dear trial,\n\n"
                          "You have invalid files! "
                          "Here are the reasons why:\n\n"
-                         "Filenames: data_clinical_supp_SAGE.txt, "
+                         "Filename: data_clinical_supp_SAGE.txt, "
                          f"Errors:\n {message}\n\n")
         patch_syn_sendmessage.assert_called_once_with(
             userIds=[file_user], messageBody=error_message,
