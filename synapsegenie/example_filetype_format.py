@@ -19,7 +19,7 @@ class FileTypeFormat:
         self.center = center
 
     def _get_dataframe(self, filePath):
-        '''
+        """
         This function by defaults assumes the filePathList is length of 1
         and is a tsv file.  Could change depending on file type.
 
@@ -29,12 +29,12 @@ class FileTypeFormat:
 
         Returns:
             df: Pandas dataframe of file
-        '''
+        """
         df = pd.read_csv(filePath, sep="\t", comment="#")
         return df
 
     def read_file(self, filePath):
-        '''
+        """
         Each file is to be read in for validation and processing.
         This is not to be changed in any functions.
 
@@ -44,22 +44,22 @@ class FileTypeFormat:
 
         Returns:
             df: Pandas dataframe of file
-        '''
+        """
         df = self._get_dataframe(filePath)
         return df
 
     def _validate_filetype(self, filePath):
-        '''Validates the file type by user defined function.  A common mapping
+        """Validates the file type by user defined function.  A common mapping
         is filename <-> filetype. Expects an assertion error.
 
         Args:
             filePath: Path to file
-        '''
+        """
         # assert True
         raise NotImplementedError
 
     def validate_filetype(self, filePath):
-        '''Validation of file type, the filetype is only returned once
+        """Validation of file type, the filetype is only returned once
         _validate_filetype passes.
 
         Args:
@@ -67,30 +67,30 @@ class FileTypeFormat:
 
         Returns:
             str: file type defined by self._fileType
-        '''
+        """
         self._validate_filetype(filePath)
         return self._filetype
 
     def process_steps(self, path_or_df, **kwargs):
-        '''
+        """
         This function is modified for every single file.
         It reformats the file and stores the file into database and Synapse.
-        '''
-        return ''
+        """
+        return ""
 
     def preprocess(self, newpath):
-        '''
+        """
         This is for any preprocessing that has to occur to the entity name
         to add to kwargs for processing.  entity name is included in
         the new path
 
         Args:
             newpath: Path to file
-        '''
+        """
         return dict()
 
     def process(self, filePath, **kwargs):
-        '''
+        """
         This is the main processing function.
 
         Args:
@@ -99,21 +99,22 @@ class FileTypeFormat:
 
         Returns:
             str: file path of processed file
-        '''
-        preprocess_args = self.preprocess(kwargs.get('newPath'))
+        """
+        preprocess_args = self.preprocess(kwargs.get("newPath"))
         kwargs.update(preprocess_args)
         mykwargs = {}
         for required_parameter in self._process_kwargs:
-            assert required_parameter in kwargs.keys(), \
+            assert required_parameter in kwargs.keys(), (
                 "%s not in parameter list" % required_parameter
+            )
             mykwargs[required_parameter] = kwargs[required_parameter]
-        logger.info('PROCESSING %s' % filePath)
+        logger.info("PROCESSING %s" % filePath)
         path_or_df = self.read_file(filePath)
         path = self.process_steps(path_or_df, **mykwargs)
         return path
 
     def _validate(self, df, **kwargs):
-        '''
+        """
         This is the base validation function.
         By default, no validation occurs.
 
@@ -124,14 +125,14 @@ class FileTypeFormat:
         Returns:
             tuple: The errors and warnings as a file from validation.
                    Defaults to blank strings
-        '''
+        """
         errors = ""
         warnings = ""
         logger.info(f"NO VALIDATION for {self._filetype} files")
         return errors, warnings
 
     def validate(self, filePath, **kwargs):
-        '''
+        """
         This is the main validation function.
         Every file type calls self._validate, which is different.
 
@@ -141,7 +142,7 @@ class FileTypeFormat:
 
         Returns:
             tuple: The errors and warnings as a file from validation.
-        '''
+        """
         mykwargs = {}
         for required_parameter in self._validation_kwargs:
             if required_parameter not in kwargs.keys():
@@ -153,14 +154,15 @@ class FileTypeFormat:
         try:
             df = self.read_file(filePath)
         except Exception as e:
-            errors = (f"The file(s) ({filePath}) cannot be read. "
-                      f"Original error: {str(e)}")
+            errors = (
+                f"The file(s) ({filePath}) cannot be read. " f"Original error: {str(e)}"
+            )
             warnings = ""
 
         if not errors:
             logger.info(f"VALIDATING {os.path.basename(filePath)}")
             errors, warnings = self._validate(df, **mykwargs)
         # File is valid if error string is blank
-        valid = (errors == '')
-        
+        valid = errors == ""
+
         return valid, errors, warnings
