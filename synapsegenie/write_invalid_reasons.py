@@ -1,8 +1,10 @@
 """Write invalid reasons"""
 import logging
+
 # import os
 
 import pandas as pd
+
 # import synapseclient
 from synapseclient import Synapse
 
@@ -38,8 +40,7 @@ logger.setLevel(logging.INFO)
 #         os.remove(center + "_errors.txt")
 
 
-def _combine_center_file_errors(syn: Synapse,
-                                center_errorsdf: pd.DataFrame) -> str:
+def _combine_center_file_errors(syn: Synapse, center_errorsdf: pd.DataFrame) -> str:
     """Combine all center errors into one printable string
 
     Args:
@@ -52,8 +53,8 @@ def _combine_center_file_errors(syn: Synapse,
     """
     center_errors = ""
     for _, row in center_errorsdf.iterrows():
-        ent = syn.get(row['id'], downloadFile=False)
-        file_errors = row['errors'].replace("|", "\n")
+        ent = syn.get(row["id"], downloadFile=False)
+        file_errors = row["errors"].replace("|", "\n")
         error_text = f"\t{ent.name} ({ent.id}):\n\n{file_errors}\n\n"
         center_errors += error_text
     return center_errors
