@@ -22,14 +22,14 @@ def make_format_registry_dict(cls_list: list) -> dict:
     return {cls._filetype: cls for cls in cls_list}
 
 
-def get_subclasses(cls: 'class'):
+def get_subclasses(cls: "class"):
     """Gets subclasses of modules and classes"""
     for subclass in cls.__subclasses__():
         yield from get_subclasses(subclass)
         yield subclass
 
 
-def find_subclasses(package_names: list, base_class: 'class') -> list:
+def find_subclasses(package_names: list, base_class: "class") -> list:
     """Finds subclasses of a specified base class
     from a list of package names.
 
@@ -48,7 +48,7 @@ def find_subclasses(package_names: list, base_class: 'class') -> list:
     for cls in get_subclasses(base_class):
         logger.debug(f"checking {cls}.")
         cls_module_name = cls.__module__
-        cls_pkg = cls_module_name.split('.')[0]
+        cls_pkg = cls_module_name.split(".")[0]
         if cls_pkg in package_names:
             matching_classes.append(cls)
     return matching_classes
@@ -69,7 +69,6 @@ def collect_format_types(package_names: str) -> Dict[str, FileTypeFormat]:
     file_format_list = find_subclasses(package_names, FileTypeFormat)
     file_format_dict = make_format_registry_dict(file_format_list)
     return file_format_dict
-
 
 
 def collect_validation_helper(package_names: str) -> Type[ValidationHelper]:
