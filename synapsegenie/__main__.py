@@ -357,7 +357,7 @@ def build_parser():
     )
     parser_process.add_argument(
         "--notify",
-        nargs="+"
+        nargs="+",
         help = "Who should receive email notification of validation errors. \
             Space separated list of 'creator', 'modifier','validator' or 'none'"
     )
