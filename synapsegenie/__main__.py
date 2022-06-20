@@ -130,14 +130,18 @@ def validate_single_file_cli_wrapper(syn, args):
 
 def process_cli_wrapper(syn, args):
     """Process CLI wrapper"""
+    # Need to reverse the parameter
+    download_files = not args.only_get_entity
     process(
         syn,
         args.project_id,
         center=args.center,
+        pemfile=args.pemfile,
         delete_old=args.delete_old,
         only_validate=args.only_validate,
         debug=args.debug,
         format_registry_packages=args.format_registry_packages,
+        download_files=download_files,
     )
 
 
@@ -150,6 +154,7 @@ def process(
     only_validate=False,
     debug=False,
     format_registry_packages=None,
+    download_files=True,
 ):
     """Process files"""
     # Get the Synapse Project where data is stored
@@ -192,6 +197,7 @@ def process(
             delete_old=delete_old,
             format_registry=format_registry,
             validator_cls=validator_cls,
+            download_files=download_files,
         )
 
     # error_tracker_synid = process_functions.get_database_synid(
@@ -342,6 +348,11 @@ def build_parser():
     )
     parser_process.add_argument(
         "--debug", action="store_true", help="Add debug mode to synapse"
+    )
+    parser_process.add_argument(
+        "--only_get_entity",
+        action="store_true",
+        help="Do not download all the files.  Default: files are downloaded",
     )
     parser_process.set_defaults(func=process_cli_wrapper)
 

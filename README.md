@@ -55,11 +55,19 @@ synapsegenie /path/to/file center_name \
 ```
 synapsegenie process -h
 
+
 # only validate
 synapsegenie process --format_registry_packages example_registry \
                      --project_id syn22337078 \
                      --only_validate
 
+# Don't download the files, only get the entity for validation
+# Sometimes there may be large files in your project which you don't
+# want to download
+synapsegenie process --format_registry_packages example_registry \
+                     --project_id syn22337078 \
+                     --only_validate \
+                     --only_get_entity
 # validate + process
 synapsegenie process --format_registry_packages example_registry \
                      --project_id syn22337078

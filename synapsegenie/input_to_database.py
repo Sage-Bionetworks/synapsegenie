@@ -38,7 +38,7 @@ def entity_date_to_timestamp(entity_date_time):
 
 # TODO: rename function
 def get_center_input_files(
-    syn: synapseclient.Synapse, synid: str, downloadFile: bool = True
+    syn: synapseclient.Synapse, synid: str, download_files: bool = True
 ) -> List[synapseclient.Entity]:
     """Walks through each center's input directory to get a
     list entities per center.
@@ -46,7 +46,7 @@ def get_center_input_files(
     Args:
         syn: Synapse object
         synid: Center input folder synid
-        downloadFile: To download files. Default is True.
+        download_files: To download files. Default is True.
 
     Returns:
         list: List of Synapse Entities per center.
@@ -56,7 +56,7 @@ def get_center_input_files(
 
     for _, _, entities in center_files:
         for name, ent_synid in entities:
-            ent = syn.get(ent_synid, downloadFile=downloadFile)
+            ent = syn.get(ent_synid, downloadFile=download_files)
             prepared_center_file_list.append(ent)
 
     return prepared_center_file_list
@@ -669,6 +669,7 @@ def center_input_to_database(
     delete_old=False,
     format_registry=None,
     validator_cls=None,
+    download_files=True,
 ):
     """Validate and process each center's input files"""
     if only_validate:
@@ -714,7 +715,9 @@ def center_input_to_database(
     logger.info(f"Center: {center}")
     logger.info(f"GETTING {center} INPUT FILES")
     # TODO: Rename function
-    center_files = get_center_input_files(syn, center_input_synid)
+    center_files = get_center_input_files(
+        syn=syn, synid=center_input_synid, download_files=download_files
+    )
 
     # only validate if there are center files
     if center_files:
