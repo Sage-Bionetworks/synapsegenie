@@ -645,7 +645,7 @@ def validation(
         pass
     else:
         user_message_dict = append_duplication_errors(
-          duplicated_filesdf, user_message_dict
+            duplicated_filesdf, user_message_dict
         )
 
         for user, message_objs in user_message_dict.items():
