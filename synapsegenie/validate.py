@@ -9,12 +9,14 @@ logger = logging.getLogger(__name__)
 
 class ValidationHelper:
     """Validation helper"""
+
     # Used for the kwargs in validate_single_file
     # Overload this per class
     _validate_kwargs = []
 
-    def __init__(self, syn, project_id, center, entity,
-                 format_registry=None, file_type=None):
+    def __init__(
+        self, syn, project_id, center, entity, format_registry=None, file_type=None
+    ):
         """A validator helper class for a center's files.
 
         Args:
@@ -32,8 +34,7 @@ class ValidationHelper:
         self.entity = entity
         self.center = center
         self._format_registry = format_registry
-        self.file_type = (self.determine_filetype()
-                          if file_type is None else file_type)
+        self.file_type = self.determine_filetype() if file_type is None else file_type
 
     def determine_filetype(self):
         """Gets the file type of the file by validating its filename
@@ -72,24 +73,25 @@ class ValidationHelper:
 
         if self.file_type not in self._format_registry:
             valid = False
-            errors = ("Your filename is incorrect! Please change your "
-                      "filename before you run the validator or specify "
-                      "--filetype if you are running the validator locally")
+            errors = (
+                "Your filename is incorrect! Please change your "
+                "filename before you run the validator or specify "
+                "--filetype if you are running the validator locally"
+            )
             warnings = ""
         else:
             mykwargs = {}
             for required_parameter in self._validate_kwargs:
-                assert required_parameter in kwargs.keys(), \
-                    f"{required_parameter} not in parameter list"
+                assert (
+                    required_parameter in kwargs.keys()
+                ), f"{required_parameter} not in parameter list"
                 mykwargs[required_parameter] = kwargs[required_parameter]
-                mykwargs['project_id'] = self._project.id
+                mykwargs["project_id"] = self._project.id
 
             validator_cls = self._format_registry[self.file_type]
             validator = validator_cls(self._synapse_client, self.center)
             # filepathlist = [entity.path for entity in self.entitylist]
-            valid, errors, warnings = validator.validate(
-                entity=self.entity, **mykwargs
-            )
+            valid, errors, warnings = validator.validate(entity=self.entity, **mykwargs)
 
         # Complete error message
         message = collect_errors_and_warnings(errors, warnings)
@@ -98,7 +100,7 @@ class ValidationHelper:
 
 
 def collect_errors_and_warnings(errors, warnings):
-    '''Aggregates error and warnings into a string.
+    """Aggregates error and warnings into a string.
 
     Args:
         errors: string of file errors, separated by new lines.
@@ -106,7 +108,7 @@ def collect_errors_and_warnings(errors, warnings):
 
     Returns:
         message - errors + warnings
-    '''
+    """
     # Complete error message
     message = "----------------ERRORS----------------\n"
     if errors == "":
@@ -114,12 +116,12 @@ def collect_errors_and_warnings(errors, warnings):
         logger.info(message)
     else:
         for error in errors.split("\n"):
-            if error != '':
+            if error != "":
                 logger.error(error)
         message += errors
     if warnings != "":
         for warning in warnings.split("\n"):
-            if warning != '':
+            if warning != "":
                 logger.warning(warning)
         message += "-------------WARNINGS-------------\n" + warnings
     return message
@@ -136,11 +138,11 @@ def get_config(syn, synid):
         dict: {'databasename': 'synid'}
 
     """
-    config = syn.tableQuery('SELECT * FROM {}'.format(synid))
+    config = syn.tableQuery("SELECT * FROM {}".format(synid))
     configdf = config.asDataFrame()
-    configdf.index = configdf['Database']
+    configdf.index = configdf["Database"]
     config_dict = configdf.to_dict()
-    return config_dict['Id']
+    return config_dict["Id"]
 
 
 def _check_parentid_permission_container(syn, parentid):
@@ -155,7 +157,8 @@ def _check_parentid_permission_container(syn, parentid):
         except (SynapseHTTPError, AssertionError):
             raise ValueError(
                 "Provided Synapse id must be your input folder Synapse id "
-                "or a Synapse Id of a folder inside your input directory")
+                "or a Synapse Id of a folder inside your input directory"
+            )
 
 
 def _check_center_input(center, center_list):
@@ -170,8 +173,9 @@ def _check_center_input(center, center_list):
 
     """
     if center not in center_list:
-        raise ValueError("Must specify one of these "
-                         f"centers: {', '.join(center_list)}")
+        raise ValueError(
+            "Must specify one of these " f"centers: {', '.join(center_list)}"
+        )
 
 
 def _upload_to_synapse(syn, filepaths, valid, parentid=None):

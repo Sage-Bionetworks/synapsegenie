@@ -18,7 +18,7 @@ class Csv(FileTypeFormat):
         assert os.path.basename(filePath).endswith(".csv")
 
     def _get_data(self, entity):
-        '''
+        """
         Each file is to be read in for validation and processing.
         This is not to be changed in any functions. If you don't
         download the files by default, you'll have to download the
@@ -30,7 +30,7 @@ class Csv(FileTypeFormat):
 
         Returns:
             df: Pandas dataframe of file
-        '''
+        """
         # Downloaded entity if only entity is passed in
         # entity = self.syn.get(entity)
         data = pd.read_csv(entity.path, sep="\t", comment="#")
