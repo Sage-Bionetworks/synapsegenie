@@ -137,9 +137,9 @@ def _send_validation_error_email(syn, user, message_objs):
 
     errors = ""
     for message_obj in message_objs:
-        file_names = ", ".join(message_obj["filenames"])
+        file_names = message_obj["filenames"]
         error_message = message_obj["messages"]
-        errors += f"Filenames: {file_names}, Errors:\n {error_message}\n\n"
+        errors += f"Filename: {file_names}, Errors:\n {error_message}\n\n"
 
     email_message = (
         f"Dear {username},\n\n"
@@ -208,7 +208,7 @@ def validatefile(
 
     """
 
-    filepath = entity.path
+    # filepath = entity.path
     filename = entity.name
 
     logger.info(f"VALIDATING {filename}")
@@ -311,11 +311,11 @@ def processfiles(
         if filetype is not None:
             processor = format_registry[filetype](syn, center)
             processor.process(
-                filePath=row["path"],
+                entity=row["entity"],
                 newPath=newpath,
                 parentId=data_folder_synid,
                 databaseSynId=tableid,
-                fileSynId=row["id"],
+                # fileSynId=row['id'],
                 databaseToSynIdMappingDf=databaseToSynIdMappingDf,
             )
 
@@ -656,7 +656,7 @@ def validation(
     )
 
     valid_filesdf = validation_statusdf.query('status == "VALIDATED"')
-    return valid_filesdf[["id", "path", "fileType", "name"]]
+    return valid_filesdf[["id", "path", "fileType", "name", "entity"]]
 
 
 def center_input_to_database(

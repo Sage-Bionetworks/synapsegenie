@@ -608,9 +608,9 @@ def test_invalid__get_status_and_error_list():
 
 def test__send_validation_error_email():
     message = "invalid error message here"
-    filenames = ["data_clinical_supp_SAGE.txt"]
+    filename = "data_clinical_supp_SAGE.txt"
     file_user = "333"
-    message_objs = [dict(filenames=filenames, messages=message)]
+    message_objs = [dict(filenames=filename, messages=message)]
     with patch.object(
         syn, "getUserProfile", return_value={"userName": "trial"}
     ) as patch_syn_getuserprofile, patch.object(
@@ -626,7 +626,7 @@ def test__send_validation_error_email():
             "Dear trial,\n\n"
             "You have invalid files! "
             "Here are the reasons why:\n\n"
-            "Filenames: data_clinical_supp_SAGE.txt, "
+            "Filename: data_clinical_supp_SAGE.txt, "
             f"Errors:\n {message}\n\n"
         )
         patch_syn_sendmessage.assert_called_once_with(
@@ -947,7 +947,7 @@ class TestValidation:
                 validator_cls=ValidationHelper,
             )
             assert valid_filedf.equals(
-                self.validation_statusdf[["id", "path", "fileType", "name"]]
+                self.validation_statusdf[["id", "path", "fileType", "name", "entity"]]
             )
 
 
@@ -959,11 +959,18 @@ class TestValidation:
     ],
 )
 def test_main_processfile(genieclass, filetype):
+    entity = synapseclient.Entity(
+        id="syn1",
+        md5="44444",
+        path="/path/to/data_clinical_supp.txt",
+        name="data_clinical_supp_SAGE.txt",
+    )
     validfiles = {
         "id": ["syn1"],
         "path": ["/path/to/data_clinical_supp.txt"],
         "fileType": [filetype],
         "name": ["data_clinical_supp_SAGE.txt"],
+        "entity": [entity],
     }
     validfilesdf = pd.DataFrame(validfiles)
     path_to_genie = "./"

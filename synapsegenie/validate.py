@@ -91,9 +91,7 @@ class ValidationHelper:
             validator_cls = self._format_registry[self.file_type]
             validator = validator_cls(self._synapse_client, self.center)
             # filepathlist = [entity.path for entity in self.entitylist]
-            valid, errors, warnings = validator.validate(
-                filePath=self.entity.path, **mykwargs
-            )
+            valid, errors, warnings = validator.validate(entity=self.entity, **mykwargs)
 
         # Complete error message
         message = collect_errors_and_warnings(errors, warnings)
