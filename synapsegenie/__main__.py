@@ -155,7 +155,7 @@ def process(
     debug=False,
     format_registry_packages=None,
     download_files=True,
-    silent=False,
+    notify=['creator','modifier'],
 ):
     """Process files"""
     # Get the Synapse Project where data is stored
@@ -354,6 +354,12 @@ def build_parser():
         "--only_get_entity",
         action="store_true",
         help="Do not download all the files.  Default: files are downloaded",
+    )
+    parser_process.add_argument(
+        "--notify",
+        nargs="+"
+        help = "Who should receive email notification of validation errors. \
+            Space separated list of 'creator', 'modifier','validator' or 'none'"
     )
     parser_process.set_defaults(func=process_cli_wrapper)
 

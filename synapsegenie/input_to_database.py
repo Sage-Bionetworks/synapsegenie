@@ -560,7 +560,7 @@ def validation(
     database_synid_mappingdf,
     format_registry,
     validator_cls,
-    silent=False,
+    notify=['modifier','creator'],
 ):
     """
     Validation of all center files
@@ -641,7 +641,7 @@ def validation(
     # In GENIE, we not only want to send out file format errors, but
     # also when there are duplicated errors.  The function below will
     # append duplication errors as an email to send to users (if applicable)
-    if silent:
+    if 'none' in notify:
         pass
     else:
         user_message_dict = append_duplication_errors(
