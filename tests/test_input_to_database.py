@@ -899,7 +899,9 @@ class TestValidation:
             ]
         ]
         invalid_errors_list = []
-        messages = []
+        messages = [
+            (entity.name, "test", [2222, 2222])
+        ]
         new_tables = {
             "validation_statusdf": self.validation_statusdf,
             "error_trackingdf": self.errors_df,
@@ -923,6 +925,8 @@ class TestValidation:
         ), patch.object(
             input_to_database, "_update_tables_content", return_value=new_tables
         ), patch.object(
+            input_to_database, "_send_validation_error_email"
+        ) as patch_send_email, patch.object(
             input_to_database, "update_status_and_error_tables"
         ):
 
@@ -949,6 +953,93 @@ class TestValidation:
             assert valid_filedf.equals(
                 self.validation_statusdf[["id", "path", "fileType", "name", "entity"]]
             )
+            patch_send_email.assert_called_once()
+
+    def test_validation_no_notify(self):
+        """Test validation steps"""
+        modified_on = 1561143558000
+        databaseToSynIdMapping = {
+            "Database": ["clinical", "validationStatus", "errorTracker"],
+            "Id": ["syn222", "syn333", "syn444"],
+        }
+        databaseToSynIdMappingDf = pd.DataFrame(databaseToSynIdMapping)
+        entity = synapseclient.Entity(
+            id="syn1234",
+            md5="44444",
+            path="/path/to/foobar.txt",
+            name="data_clinical_supp_SAGE.txt",
+        )
+        # entities = [entity]
+        filetype = "clinical"
+        input_status_list = [
+            [
+                entity.id,
+                entity.path,
+                entity.md5,
+                "VALIDATED",
+                entity.name,
+                modified_on,
+                filetype,
+                center,
+            ]
+        ]
+        invalid_errors_list = []
+        messages = [
+            (entity.name, "test", [2222, 2222])
+        ]
+        new_tables = {
+            "validation_statusdf": self.validation_statusdf,
+            "error_trackingdf": self.errors_df,
+            "duplicated_filesdf": self.empty_dup,
+        }
+        validationstatus_mock = emptytable_mock()
+        errortracking_mock = emptytable_mock()
+        valiate_cls = Mock()
+        with patch.object(
+            syn, "tableQuery", side_effect=[validationstatus_mock, errortracking_mock]
+        ) as patch_query, patch.object(
+            input_to_database,
+            "validatefile",
+            return_value=(input_status_list, invalid_errors_list, messages),
+        ) as patch_validatefile, patch.object(
+            input_to_database,
+            "build_validation_status_table",
+            return_value=self.validation_statusdf,
+        ), patch.object(
+            input_to_database, "build_error_tracking_table", return_value=self.errors_df
+        ), patch.object(
+            input_to_database, "_update_tables_content", return_value=new_tables
+        ), patch.object(
+            input_to_database, "_send_validation_error_email"
+        ) as patch_send_email, patch.object(
+            input_to_database, "update_status_and_error_tables"
+        ):
+
+            valid_filedf = input_to_database.validation(
+                syn,
+                "syn123",
+                center,
+                [entity],
+                databaseToSynIdMappingDf,
+                format_registry={"test": valiate_cls},
+                validator_cls=ValidationHelper,
+                notify=['none']
+            )
+            assert patch_query.call_count == 2
+            patch_validatefile.assert_called_once_with(
+                syn=syn,
+                project_id="syn123",
+                entity=entity,
+                validation_status_table=validationstatus_mock,
+                error_tracker_table=errortracking_mock,
+                center="SAGE",
+                format_registry={"test": valiate_cls},
+                validator_cls=ValidationHelper,
+            )
+            assert valid_filedf.equals(
+                self.validation_statusdf[["id", "path", "fileType", "name", "entity"]]
+            )
+            patch_send_email.assert_not_called()
 
 
 @pytest.mark.parametrize(

@@ -571,6 +571,7 @@ def validation(
         process: main, vcf, maf
         center_mapping_df: center mapping dataframe
         thread: Unused parameter for now
+        notify: List of notifiers. Accepts creator, modifier, none and job_submitter.
 
     Returns:
         dataframe: Valid files
@@ -650,8 +651,7 @@ def validation(
 
         for user, message_objs in user_message_dict.items():
             logger.debug(f"Sending messages to user {user}.")
-
-        _send_validation_error_email(syn=syn, user=user, message_objs=message_objs)
+            _send_validation_error_email(syn=syn, user=user, message_objs=message_objs)
 
     update_status_and_error_tables(
         syn=syn,
